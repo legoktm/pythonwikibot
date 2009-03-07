@@ -217,7 +217,7 @@ class Page:
 			'inprop':'protection|talkid|subjectid',
 			'intoken':'edit|move',
 			'rvprop':'user|comment|content',
-			'lllimit':'500',
+			'lllimit':'max',
 		}
 		self.res = self.API.query(params)['query']
 		res2 = self.res['pages']
@@ -451,7 +451,7 @@ class Page:
 			list.append(Page(item['title']))
 		return list
 	def templates(self):
-		params = {'action':'query','titles':self.page,'prop':'templates','tllimit':'500'}
+		params = {'action':'query','titles':self.page,'prop':'templates','tllimit':'max'}
 		res = self.API.query(params)['query']['pages']
 		list = res[res.keys()[0]]['templates']
 		rawlist = []
@@ -459,7 +459,7 @@ class Page:
 			rawlist.append(i['title'])
 		return rawlist
 	def whatlinkshere(self, onlyredir = False):
-		params = {'action':'query','list':'backlinks','bltitle':self.page,'bllimit':'500'}
+		params = {'action':'query','list':'backlinks','bltitle':self.page,'bllimit':'max'}
 		if onlyredir:
 			params['blfilterredir'] = 'redirects'
 		res = self.API.query(params)['query']['backlinks']

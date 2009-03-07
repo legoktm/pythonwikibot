@@ -39,7 +39,7 @@ class Category:
 			'action':'query',
 			'list':'categorymembers',
 			'cmtitle':self.page.title(),
-			'cmlimit':'500',
+			'cmlimit':'max',
 		}
 		print 'Getting [[%s]]...' %self.page.title()
 		res = self.API.query(self.params)['query']['categorymembers']
@@ -54,7 +54,7 @@ def category(page):
 		'action':'query',
 		'list':'categorymembers',
 		'cmtitle':page.title(),
-		'cmlimit':'500',
+		'cmlimit':'max',
 	}
 	result = API.query(params)
 	#format the list
@@ -76,7 +76,7 @@ def transclude(page):
 		'action':'query',
 		'list':'embeddedin',
 		'eititle':page.title(),
-		'eilimit':'500',
+		'eilimit':'max',
 	}
 	res = API.query(params)
 	list = []
@@ -95,7 +95,7 @@ def prefixindex(page):
 		'list':'allpages',
 		'apprefix':prefix,
 		'apnamespace':str(ns),
-		'aplimit':'500',
+		'aplimit':'max',
 	}
 	res = API.query(params)['query']['allpages']
 	list = []
@@ -149,7 +149,7 @@ def links(page, ns=None):
 		'action':'query',
 		'titles':page.title(),
 		'prop':'links',
-		'pllimit':'500'
+		'pllimit':'max'
 	}
 	if ns:
 		params['plnamespace'] = int(ns)
