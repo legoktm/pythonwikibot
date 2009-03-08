@@ -19,6 +19,7 @@ writeDelay = 60 # seconds
 usernames = {
 	'en.wikipedia':'Legobot II'
 }
+wiki.setUser(usernames[config.wiki])
 def checktalk():
 	page = wiki.Page('%s/Stop' %(usernames[config.wiki]))
 	try:
