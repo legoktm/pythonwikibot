@@ -11,9 +11,9 @@ def main():
 def do_page(page):
 	try:
 		print unicode(page)
+		wikitext = page.get()
 	except UnicodeEncodeError:
 		return
-	wikitext = page.get()
 	#fix all of the wg= parameters
 	newtext = re.compile('wg=architect', re.IGNORECASE).sub('architecture=yes', wikitext)
 	newtext = re.compile('wg=architecture', re.IGNORECASE).sub('architecture=yes', newtext)
