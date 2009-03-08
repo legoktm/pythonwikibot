@@ -1,6 +1,6 @@
 #!usr/bin/python
 import os, sys
-CONFIG = os.environ['PWD'] + '/userconfig.py'
+CONFIG = os.environ['PWD'] + '/pywikibot/userconfig.py'
 #if os.path.isfile(CONFIG):
 #	sys.exit('Your user-config.py already exists.')
 def main():
