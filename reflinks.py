@@ -1,5 +1,14 @@
 #!usr/bin/python
-import wiki, pagegen
+# -*- coding: utf-8  -*-
+"""
+Add {{reflist}} to pages with <ref> tags but no <references/> tag.
+Usage: python reflinks.py
+"""
+
+#
+# (C) Legoktm 2009 MIT License,
+#
+from pywikibot import wiki, pagegen
 import re, time
 def dopage(page):
 	wikitext = state = page.get()
