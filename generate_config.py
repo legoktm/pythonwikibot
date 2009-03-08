@@ -49,7 +49,7 @@ def main():
 def checklogin():
 	resp = raw_input('Would you now like to login? ([y]es or [n]o)')
 	if resp == ('y' or 'yes'):
-		import wiki
+		from pywikibot import wiki
 		wiki.login()
 	else:
 		sys.exit()
