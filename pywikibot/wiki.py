@@ -70,7 +70,7 @@ class API:
 			self.username = UserName
 		except:
 			self.username = config.username
-		self.COOKIEFILE = config.path + '/cookies/'+ self.username +'.data'
+		self.COOKIEFILE = config.path + '/pywikibot/cookies/'+ self.username +'.data'
 		self.COOKIEFILE = self.COOKIEFILE.replace(' ','_')
 		self.cj = cookielib.LWPCookieJar()
 		if os.path.isfile(self.COOKIEFILE):
@@ -261,7 +261,7 @@ class Page:
 		return self.content
 	def __updatetime(self):
 		#check if we have waited 10 seconds since the last edit/move 
-		FILE = config.path + '/cookies/lastedit.data'
+		FILE = config.path + '/pywikibot/cookies/lastedit.data'
 		try:
 			text = open(FILE, 'r').read()
 			split = text.split('|')
