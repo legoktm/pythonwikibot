@@ -21,7 +21,7 @@ usernames = {
 }
 wiki.setUser(usernames[config.wiki])
 def checktalk():
-	page = wiki.Page('%s/Stop' %(usernames[config.wiki]))
+	page = wiki.Page('User:%s/Stop' %(usernames[config.wiki]))
 	try:
 		wikitext = page.get()
 	except:
@@ -59,26 +59,23 @@ def process_article(page):
 	wikitext = re.compile(r'\{\{\s*refimprove\}\}', re.IGNORECASE).sub(r'{{Refimprove|date={{subst:CURRENTMONTHNAME}} {{subst:CURRENTYEAR}}}}', wikitext)
 	wikitext = re.compile(r'\{\{\s*primary sources\}\}', re.IGNORECASE).sub(r'{{Primary sources|date={{subst:CURRENTMONTHNAME}} {{subst:CURRENTYEAR}}}}', wikitext)
 
-		EditMsg = "Date maintenance tags"
-		if state1 != state0:
-			EditMsg = EditMsg + " and general fixes"
-		# If the text has changed at all since the state point, upload it
-		if wikitext != state0:
-#			try:
-			print 'Editing ' + page.title()
-			print 'WRITE:	Adding %s bytes.' % str(len(wikitext)-len(state0))
-#				wikipedia.showDiff(state1, wikitext)
-			try:
-				page.put(wikitext, EditMsg)
-			except wiki.LockedPage:
-				print 'SKIP: ' + page.title() + ' is locked.'
-
+	EditMsg = "Date maintenance tags"
+	if state1 != state0:
+		EditMsg = EditMsg + " and general fixes"
+	# If the text has changed at all since the state point, upload it
+	if wikitext != state0:
+		print 'Editing ' + page.title()
+		print 'WRITE:	Adding %s bytes.' % str(len(wikitext)-len(state0))
+		try:
+			page.put(wikitext, EditMsg)
+		except wiki.LockedPage:
+			print 'SKIP: ' + page.title() + ' is locked.'
 #			except KeyboardInterrupt:
 #				quit()
 #			except:
 #				print 'ERROR:	Except raised while writing.'
-		else:
-			print 'Skipping ' + page.title() + ' due to no changes made after state point.'
+	else:
+		print 'Skipping ' + page.title() + ' due to no changes made after state point.'
 def docat(cat2):
 	gen = pagegen.category(wiki.Page('Category:' + cat2))
 	for page in gen:
@@ -107,5 +104,5 @@ def main():
 if __name__ == "__main__":
 	while True:
 		main()
-		print 'Sleeping 60 seconds'
-		time.sleep(60)
+		print 'Sleeping 600 seconds'
+		time.sleep(600)
