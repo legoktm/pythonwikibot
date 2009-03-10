@@ -80,7 +80,10 @@ def docat(cat2):
 	gen = pagegen.category(wiki.Page('Category:' + cat2))
 	for page in gen:
 		if page.namespace() == 0:
-			process_article(page)
+			try:
+				process_article(page)
+			except UnicodeEncodeError:
+				pass
 			checktalk()
 		else:
 			print 'Skipping %s because it is not in the mainspace' %(page.title())
