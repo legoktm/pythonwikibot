@@ -1,4 +1,4 @@
-#!usr/bin/env python
+#!usr/bin/python
 # -*- coding: utf-8 -*-
 """
 
@@ -597,5 +597,4 @@ try:
 	x=sys.modules['wiki']
 	print 'Logged in as %s on %s.' %(config.username, config.wiki)
 except KeyError:
-	#do nothing
-	0
+	0 #do nothing
