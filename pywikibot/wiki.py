@@ -64,12 +64,15 @@ class NoTSUsername(NoUsername):
 
 class API:
 	
-	def __init__(self, wiki = config.wiki, login=False, debug=False, qcontinue = True, maxlag = config.maxlag):
+	def __init__(self, wiki = config.wiki, login=False, loginu=False, debug=False, qcontinue = True, maxlag = config.maxlag):
 		#set up the cookies
-		try:
-			self.username = UserName
-		except:
-			self.username = config.username
+		if loginu:
+			self.username = loginu
+		else:
+			try:
+				self.username = UserName
+			except:
+				self.username = config.username
 		self.COOKIEFILE = config.path + '/pywikibot/cookies/'+ self.username +'.data'
 		self.COOKIEFILE = self.COOKIEFILE.replace(' ','_')
 		self.cj = cookielib.LWPCookieJar()
@@ -213,7 +216,7 @@ class Page:
 		params = {
 			'action':'query',
 			'prop':'info|revisions|langlinks|categoryinfo',
-			'titles':self.page,
+			'titles':self.page.decode('utf-8'),
 			'inprop':'protection|talkid|subjectid',
 			'intoken':'edit|move',
 			'rvprop':'user|comment|content',
@@ -536,9 +539,13 @@ def checklogin():
 	if querycheck['query']['userinfo'].has_key('anon'):
 		return False
 	return name
-def login(username = False):
-	if not username:
+def login(username = False, prompt = False):
+	if not username and not prompt:
 		username = config.username
+	if prompt:
+		username = raw_input('Username: (blank if %s) ' %config.username)
+		if len(username) == 0:
+			username = config.username
 	try:
 		password = config.password
 	except:
@@ -549,7 +556,8 @@ def login(username = False):
 		'lgpassword' : password,
 	}
 	
-	query = API(login=True).query(params)
+	query = API(login=True, loginu=username).query(params)
+	password = [] #so it can't be used again
 	result = query['login']['result'].lower()
 	if result == 'success':
 		print 'Successfully logged in on %s.' %(config.wiki)
@@ -580,7 +588,9 @@ def showDiff(oldtext, newtext):
 			print line
 	
 if __name__ == "__main__":
-	login()
+	print 'PythonWikiBot version 0.1'
+	print '(C) 2008-2009 PythonWikiBot team MIT License'
+	login(prompt=True)
 try:
 	x=sys.modules['wiki']
 	print 'Logged in as %s on %s.' %(config.username, config.wiki)
