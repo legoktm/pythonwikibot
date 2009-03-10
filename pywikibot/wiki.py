@@ -252,18 +252,24 @@ class Page:
 		return self.page
 	def get(self, force = False):
 		if self.isRedirect() and (not force):
-			raise IsRedirectPage(self.API.query({'action':'query','titles':self.page,'redirects':''})['query']['redirects'][0]['to'])
+			raise IsRedirectPage(self.getredirecttarget())
 		if int(self.id) == (-1 or -2):
 			raise NoPage(self.page)
 		if not self.content:
 			self.__basicinfo()
 		self.content = self.content.encode('utf-8')
 		return self.content
+	def getredirecttarget(self):
+		if not self.isRedirect():
+			return False
+		return Page(self.API.query({'action':'query','titles':self.page,'redirects':''})['query']['redirects'][0]['to'])
 	def __updatetime(self):
 		#check if we have waited 10 seconds since the last edit/move 
 		FILE = config.path + '/pywikibot/cookies/lastedit.data'
 		try:
-			text = open(FILE, 'r').read()
+			textfile = open(FILE, 'r')
+			text = textfile.read()
+			textfile.close() #if we dont, and you make over 2000 edits, crashes w/ to many files open
 			split = text.split('|')
 			date = datetime(int(split[0]), int(split[1]), int(split[2]), int(split[3]), int(split[4]), int(split[5]))
 		except IOError:
