@@ -2,7 +2,7 @@
 import os, sys, re, time
 from pywikibot import wiki, pagegen
 wiki.setUser('Legobot')
-
+__version__ = '$Id$'
 def main():
 	gen = pagegen.category(wiki.Page('Category:WikiProject Korea articles using the wg parameter'))
 	for page in gen:

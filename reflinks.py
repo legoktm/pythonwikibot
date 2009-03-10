@@ -8,6 +8,8 @@ Usage: python reflinks.py
 #
 # (C) Legoktm 2009 MIT License,
 #
+__version__ = '$Id$'
+
 from pywikibot import wiki, pagegen
 import re, time
 def dopage(page):

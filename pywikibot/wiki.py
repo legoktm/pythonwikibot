@@ -9,6 +9,8 @@ Released under the MIT License
 See COPYING for full License
 
 """
+__version__ = '$Id$'
+
 import urllib2, urllib, re, time, getpass, cookielib
 from datetime import datetime
 import config

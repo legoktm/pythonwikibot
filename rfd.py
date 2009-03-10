@@ -1,8 +1,8 @@
 #!usr/bin/python
 #
-# (C) $Author$, 2009 MIT License 
+# (C) Legoktm, 2009 MIT License 
 #
-__version__ = '$Id$ $Rev$ $Date$'
+__version__ = '$Id$'
 """
 Tags pages for RFD
 Usage: python rfd.py

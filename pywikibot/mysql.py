@@ -10,7 +10,7 @@ Script that has MySQL Functions for toolserver users
 Wiki should be in the form of langproject (ex. enwiki) without the '_p' on the end
 Host is either 1, 2, or 3.  Can be left blank
 """
-
+__version__ = '$Id$'
 
 class MySQL:
 	

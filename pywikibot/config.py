@@ -1,4 +1,5 @@
 #!usr/bin/python
+__version__ = '$Id$'
 import sys
 try:
 	import userconfig

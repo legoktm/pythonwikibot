@@ -4,6 +4,7 @@
 # Released under the MIT License
 #
 # All pages should be in the wiki.Page() format
+__version__ = '$Id$'
 
 import wiki, config
 

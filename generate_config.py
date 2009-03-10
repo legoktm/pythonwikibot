@@ -1,4 +1,5 @@
 #!usr/bin/python
+__version__ = '$Id$'
 import os, sys
 CONFIG = os.environ['PWD'] + '/pywikibot/userconfig.py'
 #if os.path.isfile(CONFIG):
