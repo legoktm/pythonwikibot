@@ -2,7 +2,7 @@
 #
 # (C) $Author$, 2009 MIT License 
 #
-__version__ = '$ID$ $Rev$ $Date$'
+__version__ = '$Id$ $Rev$ $Date$'
 """
 Tags pages for RFD
 Usage: python rfd.py
