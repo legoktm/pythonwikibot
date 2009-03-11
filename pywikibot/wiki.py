@@ -14,12 +14,15 @@ __version__ = '$Id$'
 import urllib2, urllib, re, time, getpass, cookielib
 from datetime import datetime
 import config
-import simplejson, sys, os, difflib, StringIO, hashlib
+import sys, os, difflib, StringIO, hashlib
 try:
 	import gzip
 except ImportError:
 	gzip = False
-
+try:
+	import simplejson
+except ImportError:
+	import json as simplejson
 class APIError(Exception):
 	"""General API error and base class for all errors"""
 
@@ -261,14 +264,22 @@ class Page:
 					self.protecttoken = 'NO'
 				if i == 'Action \'edit\' is not allowed for the current user':
 					self.edittoken = 'NO'
-		if not self.movetoken
+		try:
 			self.movetoken = self._basicinfo['movetoken']
-		if not self.edittoken
+		except:
+			self.movetoken = 'NO'
+		try:
 			self.edittoken = self._basicinfo['edittoken']
-		if not self.protecttoken
+		except:
+			self.edittoken = 'NO'
+		try:
 			self.protecttoken = self._basicinfo['protecttoken']
-		if not self.deletetoken
+		except:
+			self.protecttoken = 'NO'
+		try:
 			self.deletetoken = self._basicinfo['deletetoken']
+		except:
+			self.deletetoken = 'NO'
 			
 		self.starttimestamp = self._basicinfo['starttimestamp']
 		
@@ -511,9 +522,11 @@ class Page:
 			raise APIError(res)
 		except IndexError:
 			raise APIError(res)
-	def aslink(self, regex = False):
+	def aslink(self, regex = False, template = True):
 		if not regex:
 			return '[[%s]]' %(self.page)
+		if self.isTemplate() and template:
+			return '\{\{%s' %self.titlewonamespace()
 		reg =  '\[\[%s\]\]' %(self.page)
 		self.reg = reg.replace('(','\(').replace(')','\)')
 		return self.reg
@@ -612,6 +625,12 @@ def login(username = False, prompt = False):
 	else:
 		print 'Failed to login on %s.' %(config.wiki)
 		raise APIError(query)
+def getArgs(args=False):
+	if type(args) == type(''):
+		args = args.split(' ')
+	if not args:
+		args = sys.argv[1:]
+	return args
 def setAction(summary):
 	global EditSummary
 	EditSummary = summary

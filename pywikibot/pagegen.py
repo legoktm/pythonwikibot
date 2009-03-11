@@ -7,7 +7,7 @@
 __version__ = '$Id$'
 
 import wiki, config
-
+import sys, re
 """
 Gets all articles in a certain category and returns a list
 Recurse can be an integer or True for a full recurse
@@ -130,7 +130,10 @@ def recentchanges(limit = 500, nobot = True, onlyanon = False, hidepatrolled = T
 		'rclimit':limit
 	}
 	if nponly:
+		print 'Fetching the %s newest pages' %limit
 		params['rctype'] = 'new'
+	else:
+		print 'Fetching the %s latest edits' %limit
 	API = wiki.API(qcontinue=False, wiki=wiki)
 	res = API.query(params)['query']['recentchanges']
 	list = []
@@ -160,4 +163,49 @@ def links(page, ns=None):
 	for page in list:
 		newlist.append(wiki.Page(page['title']))
 	return newlist
-	
+
+"""
+Picks the generator per argument passed in command line
+Usage:
+gen = pagegen.handleArgs()
+for page in gen:
+	...do something
+"""
+def handleArgs():
+	for arg in wiki.getArgs():
+		if arg.startswith('-cat'):
+			if len(arg) == 4:
+				cat = raw_input('Which category should be operated on? ')
+				if not 'category' in cat.lower():
+					cat = 'Category:' + cat
+				return category(wiki.Page(cat))
+			else: #means that category has been supplied
+				cat = arg[5:]
+				if not 'category' in cat.lower():
+					cat = 'Category:' + cat
+				return category(wiki.Page(cat))
+		if arg.startswith('-file'):
+			if len(arg) == 5:
+				fil = raw_input('Which file should be read? ')
+			else: #means that file has been supplied
+				fil = arg[6:]
+			try:
+				file = open(fil, 'r')
+			except IOError, err:
+				print err
+				sys.exit(1)
+			text = file.read()
+			list = re.findall('\[\[(.*?)\]\]', text)
+			newlist = []
+			for i in list:
+				newlist.append(wiki.Page(i))
+			return newlist
+		if arg.startswith('-new'):
+			if len(arg) == 4:
+				return recentchanges()
+			else:
+				try:
+					limit = int(arg[5:])
+				except:
+					return recentchanges()
+				return recentchanges(limit=limit)	
