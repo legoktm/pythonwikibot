@@ -29,7 +29,10 @@ class NotLoggedIn(APIError):
 class UserBlocked(APIError):
 	"""User is blocked"""
 
-class LockedPage(APIError):
+class NotAllowed(APIError):
+	"""Tries preforming action without right"""
+	
+class LockedPage(NotAllowed):
 	"""Page is protected and user doesn't have right to edit"""
 
 class MoveFailed(APIError):
@@ -58,6 +61,7 @@ class NoUsername(APIError):
 
 class Maxlag(APIError):
 	"""Maxlag is too high"""
+
 class MySQLError(Exception):
 	"""Base class for all MySQL errors"""
 
@@ -208,6 +212,8 @@ class Page:
 		self.starttimestamp = False
 		self.ns = False
 		self.revisions = False
+		self.deletetoken = False
+		self.protecttoken = False
 	def __str__(self):
 		return self.aslink()
 	def __repr__(self):
@@ -220,7 +226,7 @@ class Page:
 			'prop':'info|revisions|langlinks|categoryinfo',
 			'titles':self.page.decode('utf-8'),
 			'inprop':'protection|talkid|subjectid',
-			'intoken':'edit|move',
+			'intoken':'edit|move|delete|protect', #even if not admin, just get them...
 			'rvprop':'user|comment|content',
 			'lllimit':'max',
 		}
@@ -244,12 +250,26 @@ class Page:
 		self.prot = self._basicinfo['protection']
 		self.edittoken = self._basicinfo['edittoken']
 		self.ns = self._basicinfo['ns']
-		try:
+		if self.res.has_key('warnings'):
+			self.warnings = self.res['warnings']['info'].split('\n')
+			for i in self.warnings:
+				if i == 'Action \'move\' is not allowed for the current user':
+					self.movetoken = 'NO'
+				if i == 'Action \'delete\' is not allowed for the current user':
+					self.deletetoken = 'NO'
+				if i == 'Action \'protect\' is not allowed for the current user':
+					self.protecttoken = 'NO'
+				if i == 'Action \'edit\' is not allowed for the current user':
+					self.edittoken = 'NO'
+		if not self.movetoken
 			self.movetoken = self._basicinfo['movetoken']
-		except:
-			if self.res.has_key('warnings'):
-				if self.res['warnings']['info']['*'] == 'Action \'move\' is not allowed for the current user':
-					raise NotLoggedIn
+		if not self.edittoken
+			self.edittoken = self._basicinfo['edittoken']
+		if not self.protecttoken
+			self.protecttoken = self._basicinfo['protecttoken']
+		if not self.deletetoken
+			self.deletetoken = self._basicinfo['deletetoken']
+			
 		self.starttimestamp = self._basicinfo['starttimestamp']
 		
 		return self._basicinfo
@@ -299,8 +319,12 @@ class Page:
 			try:
 				summary = EditSummary
 			except NameError:
-				summary = '[[WP:BOT|Bot]]: Automated edit' 
+				summary = '[[WP:BOT|Bot]]: Automated edits using [[en:w:User:Legobot/PythonWikiBot|PythonWikiBot]]' 
 		md5 = hashlib.md5(newtext).hexdigest()
+		if not self.edittoken:
+			self.__basicinfo()
+		if self.edittoken == 'NO':
+			raise NotAllowed({'action':'edit','page':self.page})
 		params = {
 			'action':'edit',
 			'title':self.page,
@@ -400,22 +424,18 @@ class Page:
 			return False
 		else:
 			return True
-	def move(self, newtitle, summary, movetalk = True):
+	def move(self, newtitle, reason=False, movetalk = True):
 		self.newtitle = newtitle.decode('utf-8').encode('utf-8')
-		tokenparams = {
-			'action':'query',
-			'prop':'info',
-			'intoken':'move',
-			'titles':self.page
-		}
-		token = self.API.query(tokenparams)['query']['pages']
-		token = token[token.keys()[0]]['movetoken']
+		if not self.movetoken:
+			self.__basicinfo()
+		if self.movetoken == 'NO':
+			raise NotAllowed({'action':'move','page':self.page})
 		params = {
 			'action':'move',
 			'from':self.page,
 			'to':self.newtitle,
 			'reason':summary,
-			'token':token,
+			'token':self.movetoken,
 			'movetalk':'',
 		}
 		self.__updatetime()
@@ -497,6 +517,28 @@ class Page:
 		reg =  '\[\[%s\]\]' %(self.page)
 		self.reg = reg.replace('(','\(').replace(')','\)')
 		return self.reg
+	def delete(self, reason=False): #ADMIN ONLY FUNCTION
+		if not reason:
+			try:
+				summary = EditSummary
+			except:
+				summary = None
+		else:
+			summary = reason
+		if not self.deletetoken:
+			self.__basicinfo()
+		if self.deletetoken == 'NO':
+			raise NotAllowed({'action':'delete','page':self.page})
+		self.__updatetime() #slow us down
+		params = {
+			'action':'delete',
+			'title':self.page,
+			'token':self.deletetoken
+		}
+		if summary:
+			params['reason'] = summary
+		self.API.query(params, write = True) #TODO: implement error checking
+
 """
 Class that is mainly internal working, but contains information relevant
 to the wiki site.
