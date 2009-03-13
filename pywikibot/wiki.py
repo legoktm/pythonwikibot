@@ -379,7 +379,7 @@ class Page:
 			self.__basicinfo()
 		ret = self.revisions
 		if prnt:
-			print 'The last edit on %s was made by: %s with the comment of: %s.' %(page, ret['user'], ret['comment'])
+			print 'The last edit on %s was made by: %s with the comment of: %s at %s.' %(page, ret['user'], ret['comment'], ret['timestamp'])
 		return ret
 	def istalk(self):
 		if not self.ns:
@@ -649,6 +649,17 @@ def showDiff(oldtext, newtext):
 			print line
 		elif '+' == line[0]:
 			print line
+
+def parseTemplate(str):
+	str = str.replace('|', ' |') #so that \s catches it
+	str = str.replace('}}', ' }}') #last parm is caught by \s
+	regex = re.compile("(?P<key>\w*?)=(?P<value>\w*?)\s|$", re.MULTILINE)
+	findall = regex.findall(str)
+	ret = {}
+	for i in findall:
+		if len(i[0]) != 0:
+			ret[i[0]] = i[1]
+	return ret
 	
 if __name__ == "__main__":
 	print 'PythonWikiBot version 0.1'
