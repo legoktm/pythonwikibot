@@ -81,6 +81,6 @@ def convertts(ts):
 	year = str(st.tm_year)
 	hour = str(st.tm_hour)
 	min = str(st.tm_min)
-	monthname = timedate.monthname(st.tm_month)
+	monthname1 = monthname(st.tm_mon)
 	day = str(st.tm_mday)
-	return '%s:%s, %s %s %s' %(hour, min, day, monthname, year)
+	return '%s:%s, %s %s %s' %(hour, min, day, monthname1, year)

@@ -12,8 +12,9 @@ See COPYING for full License
 __version__ = '$Id$'
 
 import urllib2, urllib, re, time, getpass, cookielib
+from urllib import quote_plus, _is_unicode
 from datetime import datetime
-import config
+import config, timedate
 import sys, os, difflib, StringIO, hashlib
 try:
 	import gzip
@@ -103,11 +104,22 @@ class API:
 		if os.path.isfile(self.COOKIEFILE):
 			self.cj.load(self.COOKIEFILE)
 		self.params = params
-		self.params['format'] = 'json'
+		if type(self.params) == type({}):
+			self.params['format'] = 'json'
+			self.pformat='dict'
+		elif type(self.params) == type(''):
+			self.params += '&format=json'
+			self.pformat = 'str'
 		if self.write:
-			self.params['maxlag'] = self.maxlag
-		self.encodeparams = urllib.urlencode(self.params)
-		if self.debug:
+			if self.pformat == 'dict':
+				self.params['maxlag'] = self.maxlag
+			elif self.pformat == 'str':
+				self.params += '&maxlag=%s' %self.maxlag
+		if self.pformat == 'dict':
+			self.encodeparams = urlencode(self.params)
+		else:
+			self.encodeparams = self.params
+		if self.debug and not (write or login):
 			print self.encodeparams
 		self.headers = {
 			"Content-type": "application/x-www-form-urlencoded",
@@ -217,6 +229,7 @@ class Page:
 		self.revisions = False
 		self.deletetoken = False
 		self.protecttoken = False
+		self.traffic = False
 	def __str__(self):
 		return self.aslink()
 	def __repr__(self):
@@ -227,10 +240,10 @@ class Page:
 		params = {
 			'action':'query',
 			'prop':'info|revisions|langlinks|categoryinfo',
-			'titles':self.page.decode('utf-8'),
+			'titles':self.page.encode('utf-8'),
 			'inprop':'protection|talkid|subjectid',
 			'intoken':'edit|move|delete|protect', #even if not admin, just get them...
-			'rvprop':'user|comment|content',
+			'rvprop':'user|comment|content|timestamp',
 			'lllimit':'max',
 		}
 		self.res = self.API.query(params)['query']
@@ -238,7 +251,7 @@ class Page:
 		self.id = str(res2.keys()[0])
 		self._basicinfo = res2[self.id]
 		try:
-			self.revisions = self._basicinfo['revisions']
+			self.revisions = self._basicinfo['revisions'][0]
 			self.content = self._basicinfo['revisions'][0]['*']
 		except:
 			if self._basicinfo.has_key('missing'):
@@ -551,7 +564,25 @@ class Page:
 		if summary:
 			params['reason'] = summary
 		self.API.query(params, write = True) #TODO: implement error checking
-
+	def NumberofRevisions(self): #returns the number of revisions
+		params = 'action=query&prop=revisions&titles=API&rvlimit=max'
+		res = self.API.query(params)['query']['pages']
+		self.fullrevisions = res[res.keys()[0]]['revisions']
+		return len(self.fullrevisions)
+	def ArticleTraffic(self, force=False):
+		if self.traffic and not force:
+			return self.traffic
+		year = str(time.gmtime().tm_year)
+		month = timedate.numwithzero(time.gmtime().tm_mon)
+		url = 'http://stats.grok.se/en/%s%s/%s' %(year, month, self.page)
+		open = urllib.urlopen(url)
+		text = open.read()
+		open.close() #:P
+		self.traffic = int(re.findall('viewed (.*?) times',text)[0])
+		return self.traffic
+		
+		
+		
 """
 Class that is mainly internal working, but contains information relevant
 to the wiki site.
@@ -660,13 +691,69 @@ def parseTemplate(str):
 		if len(i[0]) != 0:
 			ret[i[0]] = i[1]
 	return ret
+def urlencode(query,doseq=0):
+	"""
+	Hack of urllib's urlencode function, which can handle
+	utf-8, but for unknown reasons, chooses not to by 
+	trying to encode everything as ascii
+    """
+
+	if hasattr(query,"items"):
+		# mapping objects
+		query = query.items()
+	else:
+		# it's a bother at times that strings and string-like objects are
+		# sequences...
+		try:
+			# non-sequence items should not work with len()
+			# non-empty strings will fail this
+			if len(query) and not isinstance(query[0], tuple):
+				raise TypeError
+			# zero-length sequences of all types will get here and succeed,
+			# but that's a minor nit - since the original implementation
+			# allowed empty dicts that type of behavior probably should be
+			# preserved for consistency
+		except TypeError:
+			ty,va,tb = sys.exc_info()
+			raise TypeError, "not a valid non-string sequence or mapping object", tb
+
+	l = []
+	if not doseq:
+		# preserve old behavior
+		for k, v in query:
+			k = quote_plus(str(k))
+			v = quote_plus(str(v))
+			l.append(k + '=' + v)
+	else:
+		for k, v in query:
+			k = quote_plus(str(k))
+			if isinstance(v, str):
+				v = quote_plus(v)
+				l.append(k + '=' + v)
+			elif _is_unicode(v):
+				# is there a reasonable way to convert to ASCII?
+				# encode generates a string, but "replace" or "ignore"
+				# lose information and "strict" can raise UnicodeError
+				v = quote_plus(v.encode("utf8","replace")) #this is what is changed.. ACSII->utf8
+				l.append(k + '=' + v)
+			else:
+				try:
+					# is this a sufficient test for sequence-ness?
+					x = len(v)
+				except TypeError:
+					# not a sequence
+					v = quote_plus(str(v))
+					l.append(k + '=' + v)
+				else:
+					# loop over the sequence
+					for elt in v:
+						l.append(k + '=' + quote_plus(str(elt)))
+	return '&'.join(l)
+
 	
 if __name__ == "__main__":
 	print 'PythonWikiBot version 0.1'
 	print '(C) 2008-2009 PythonWikiBot team MIT License'
 	login(prompt=True)
-try:
-	x=sys.modules['wiki']
-	print 'Logged in as %s on %s.' %(config.username, config.wiki)
-except KeyError:
-	0 #do nothing
+#print this when imported
+print 'Operating as %s on %s.' %(config.username, config.wiki)

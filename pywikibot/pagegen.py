@@ -21,16 +21,16 @@ class Category:
 		self.API = wiki.API(wiki=self.site)
 		self.rinfinite = False #set it now, change it later
 		if recurse:
-			if type(recurse) is int:
+			if type(recurse) is type(0):
 				self.recurse = recurse
-			elif type(recurse) is bool: #has to be true
+			elif type(recurse) is type(True): #has to be true
 				self.recurse = recurse
 				self.rinfinite = True
-			elif type(recurse) is str:
+			elif type(recurse) is type(''):
 				try:
 					recurse = int(recurse)
 					self.recurse = recurse
-				except:
+				except: #wtf??
 					self.recurse = False
 			else: #wtf??
 				self.recurse = False
@@ -42,15 +42,15 @@ class Category:
 			'cmtitle':self.page.title(),
 			'cmlimit':'max',
 		}
-		print 'Getting [[%s]]...' %self.page.title()
+		print 'Getting %s...' %self.page.aslink()
 		res = self.API.query(self.params)['query']['categorymembers']
 		list = []
-		
+
 def category(page):
 	if not page.isCategory():
 		raise wiki.NotCategory(page.title())
 	API = wiki.API(wiki=page.site())
-	print 'Getting [[%s]]...' %page.title()
+	print 'Getting %s...' %page.aslink()
 	params = {
 		'action':'query',
 		'list':'categorymembers',
@@ -163,6 +163,21 @@ def links(page, ns=None):
 	for page in list:
 		newlist.append(wiki.Page(page['title']))
 	return newlist
+
+def whatlinkshere(page):
+	API = wiki.API(wiki=page.site())
+	params = {
+		'action':'query',
+		'bltitle':page.title(),
+		'list':'backlinks',
+		'bllimit':'max',
+	}
+	res = API.query(params)['query']['backlinks']
+	list = []
+	for i in res:
+		list.append(wiki.Page(i['title']))
+	return list
+	
 
 """
 Picks the generator per argument passed in command line
