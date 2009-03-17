@@ -8,11 +8,12 @@ __version__ = '$Id$'
 
 import wiki, config
 import sys, re
-"""
-Gets all articles in a certain category and returns a list
-Recurse can be an integer or True for a full recurse
-"""
+
 class Category:
+	"""
+	Gets all articles in a certain category and returns a list
+	Recurse can be an integer or True for a full recurse
+	"""
 	def __init__(self, page, recurse = False):
 		self.page = page
 		self.site = self.page.site()
@@ -46,7 +47,7 @@ class Category:
 		res = self.API.query(self.params)['query']['categorymembers']
 		list = []
 
-def category(page):
+def category(page, limit = False):
 	if not page.isCategory():
 		raise wiki.NotCategory(page.title())
 	API = wiki.API(wiki=page.site())
@@ -55,8 +56,11 @@ def category(page):
 		'action':'query',
 		'list':'categorymembers',
 		'cmtitle':page.title(),
-		'cmlimit':'max',
 	}
+	if not limit:
+		params['cmlimit'] = 'max'
+	else:
+		params['cmlimit'] = limit
 	result = API.query(params)
 	#format the list
 	list = []
@@ -67,10 +71,11 @@ def category(page):
 		except UnicodeEncodeError:
 			pass
 	return list
-"""
-Returns pages that transclude a certain template
-"""
+
 def transclude(page):
+	"""
+	Returns pages that transclude a certain template
+	"""
 	API = wiki.API(wiki=page.site())
 	print 'Getting references to [[%s]]...' %(page.title())
 	params = {
@@ -84,10 +89,11 @@ def transclude(page):
 	for page in res['query']['embeddedin']:
 		list.append(wiki.Page(page['title']))
 	return list
-"""
-Returns list of pages with prefix of the page ([[Special:PrefixIndex]])
-"""
+
 def prefixindex(page):
+	"""
+	Returns list of pages with prefix of the page ([[Special:PrefixIndex]])
+	"""
 	API = wiki.API(wiki=page.site())
 	ns = page.namespace()
 	prefix = page.titlewonamespace()
@@ -103,11 +109,12 @@ def prefixindex(page):
 	for page in res:
 		list.append(wiki.Page(page['title']))
 	return list
-"""
-Returns a list of articles that were recently changed ([[Special:RecentChanges]])
-If nponly = True, returns only newpages ([[Special:NewPages]])
-"""
+
 def recentchanges(limit = 500, nobot = True, onlyanon = False, hidepatrolled = True, nponly = False, wiki=config.wiki):
+	"""
+	Returns a list of articles that were recently changed ([[Special:RecentChanges]])
+	If nponly = True, returns only newpages ([[Special:NewPages]])
+	"""
 	rcshow = []
 	if nobot:
 		rcshow.append('!bot')
@@ -142,12 +149,12 @@ def recentchanges(limit = 500, nobot = True, onlyanon = False, hidepatrolled = T
 
 	return list
 
-"""
-Returns links on a provided page
-Not Special:WhatLinksHere
-ns is an (optional) int() which is the only namespace returned
-"""
 def links(page, ns=None):
+	"""
+	Returns links on a provided page
+	Not Special:WhatLinksHere
+	ns is an (optional) int() which is the only namespace returned
+	"""
 	API = wiki.API(wiki=page.site())
 	params = {
 		'action':'query',
@@ -165,6 +172,9 @@ def links(page, ns=None):
 	return newlist
 
 def whatlinkshere(page):
+	"""
+	[[Special:WhatLinksHere]]
+	"""
 	API = wiki.API(wiki=page.site())
 	params = {
 		'action':'query',
@@ -179,14 +189,15 @@ def whatlinkshere(page):
 	return list
 	
 
-"""
-Picks the generator per argument passed in command line
-Usage:
-gen = pagegen.handleArgs()
-for page in gen:
-	...do something
-"""
+
 def handleArgs():
+	"""
+	Picks the generator per argument passed in command line
+	Usage:
+	gen = pagegen.handleArgs()
+	for page in gen:
+	...do something
+	"""
 	for arg in wiki.getArgs():
 		if arg.startswith('-cat'):
 			if len(arg) == 4:

@@ -1,13 +1,17 @@
 #!usr/bin/python
-import time
+import time, datetime
 """
 Not to be run as a file
 Contains lists and dictionaries to help with dates
-Only for English Language
+Only for English Language, however translations are welcome.
 """
 MonthNames    = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December' ]
 
 def monthname(number):
+	"""
+	Returns the month name
+	for the given integer.
+	"""
 	return MonthNames[int(number)-1]
 
 
@@ -55,6 +59,10 @@ month_to_num = {
 }
 
 def daysinmonth(var):
+	"""
+	Returns the number of days in a month.
+	var = month name or number
+	"""
 	try:
 		int(var)
 		num = True
@@ -65,17 +73,31 @@ def daysinmonth(var):
 	number = month_to_num[var]
 	return days_in_month[number]
 def currtime():
+	"""
+	Returns a time.time() object
+	"""
 	return time.time()
 def numwithzero(num):
+	"""
+	Returns a str where their is a
+	'0' in front of a number
+	"""
 	num = int(num)
 	if num >= 10:
 		return str(num)
 	else:
 		return '0%' + str(num)
 def monthname(num):
+	"""
+	Returns the name of the month based on the integer.
+	"""
 	return num_to_month[int(num)]
 
 def convertts(ts):
+	"""
+	Converts MediaWiki timestamps (ISO 8601)
+	to a human readable one.
+	"""
 	epochts = int(time.mktime(time.strptime(ts, '%Y-%m-%dT%H:%M:%SZ')))
 	st = time.gmtime(epochts)
 	year = str(st.tm_year)

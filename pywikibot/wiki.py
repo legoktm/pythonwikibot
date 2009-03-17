@@ -21,9 +21,9 @@ try:
 except ImportError:
 	gzip = False
 try:
-	import simplejson
-except ImportError:
 	import json as simplejson
+except ImportError:
+	import simplejson
 class APIError(Exception):
 	"""General API error and base class for all errors"""
 
@@ -212,10 +212,17 @@ class API:
 		return ret
 
 class Page:
-	
+	"""
+	A wiki.Page() object.
+	page = page title whether as plain text or [[wikilinked]]. (REQUIRED)
+	wiki = which site is the page on? (optional: defaults to config.wiki)
+	"""
 	def __init__(self, page, wiki = config.wiki):
 		self.API = API()
-		self.page = unicode(page)
+		if '[[' in page:
+			self.page = unicode(re.findall('\[\[(.*?)\]\]', page)[0])
+		else:
+			self.page = unicode(page)
 		self.wiki = wiki
 		self.Site = Site(wiki=self.wiki)
 		self.content = False
@@ -298,17 +305,29 @@ class Page:
 		
 		return self._basicinfo
 	def title(self):
+		"""
+		Returns a unicode string of the page title.
+		"""
 		return self.page
 	def get(self, force = False):
+		"""
+		Returns the wikitext of the page.
+		It will raise an error if the page is a redirect
+		and force is not True.
+		"""
 		if self.isRedirect() and (not force):
 			raise IsRedirectPage(self.getredirecttarget())
-		if int(self.id) == (-1 or -2):
+		if int(self.id) < 0:
 			raise NoPage(self.page)
 		if not self.content:
 			self.__basicinfo()
 		self.content = self.content.encode('utf-8')
 		return self.content
 	def getredirecttarget(self):
+		"""
+		Returns a Page() object of the
+		targed of the redirect.
+		"""
 		if not self.isRedirect():
 			return False
 		return Page(self.API.query({'action':'query','titles':self.page,'redirects':''})['query']['redirects'][0]['to'])
@@ -338,6 +357,13 @@ class Page:
 		write.write(newtext)
 		write.close()	
 	def put(self, newtext, summary=False, watch = False, newsection = False):
+		"""
+		Edits the wikipage.
+		newtext = what to replace the text with (REQUIRED)
+		summary = the edit summary (optional: can be set with setAction)
+		watch = bool, whether the page should be added to the watchlist (optional: default false)
+		newsection = bool, whether the newtext is added as a new section. (optional: default false)
+		"""
 		#set the summary
 		if not summary:
 			try:
@@ -376,6 +402,10 @@ class Page:
 			raise APIError(res)
 		
 	def titlewonamespace(self):
+		"""
+		Returns a unicode string of the title
+		without the namespace prefix.
+		"""
 		if not self.ns:
 			self.__basicinfo()
 		if self.ns == 0:
@@ -383,11 +413,19 @@ class Page:
 		else:
 			return self.page.split(':')[1]
 	def namespace(self):
+		"""
+		Returns the namespace as an integer
+		"""
 		if not self.ns:
 			self.__basicinfo()
 		return self.ns
 
 	def lastedit(self, prnt = False):
+		"""
+		Returns a dictionary with the info provided by
+		prop=revisions
+		rvprop=user|comment|content|timestamp
+		"""
 		if not self.revisions:
 			self.__basicinfo()
 		ret = self.revisions
@@ -395,6 +433,10 @@ class Page:
 			print 'The last edit on %s was made by: %s with the comment of: %s at %s.' %(page, ret['user'], ret['comment'], ret['timestamp'])
 		return ret
 	def istalk(self):
+		"""
+		Returns True or False depending
+		on whether the page is a talk page.
+		"""
 		if not self.ns:
 			self.__basicinfo()
 		if self.ns != -1 or self.ns != -2:
@@ -407,6 +449,10 @@ class Page:
 		else:
 			return False
 	def toggletalk(self):
+		"""
+		Returns a Page object of the 
+		article page or talk page
+		"""
 		try:
 			nstext = self.page.split(':')[0]
 		except:
@@ -415,8 +461,7 @@ class Page:
 		if nsnum == -1 or nsnum == -2:
 			print 'Cannot toggle the talk of a Special or Media page.'
 			return Page(self.page)
-		istalk = self.istalk()
-		if istalk:
+		if self.istalk():
 			nsnewtext = self.Site.namespacelist()[0][nsnum-1]
 		else:
 			nsnewtext = self.Site.namespacelist()[0][nsnum+1]
@@ -583,11 +628,12 @@ class Page:
 		
 		
 		
-"""
-Class that is mainly internal working, but contains information relevant
-to the wiki site.
-"""
+
 class Site:
+	"""
+	Class that is mainly internal working, but contains information relevant
+	to the wiki site.
+	"""
 	def __init__(self, wiki):
 		self.wiki = wiki
 		self.API = API(self.wiki)
@@ -612,6 +658,11 @@ class Site:
 Other functions
 """
 def checklogin():
+	"""
+	Checks whether the bot is logged in.
+	It will not check if it is a certain user, but not an anon.
+	Also checks whether you have new messages.
+	"""
 	paramscheck = {
 		'action':'query',
 		'meta':'userinfo',
@@ -628,6 +679,11 @@ def checklogin():
 		return False
 	return name
 def login(username = False, prompt = False):
+	"""
+	Used to log a user in to the wiki.
+	username = specifies username to login with (optional)
+	prompt = whether to prompt for username (optional)
+	"""
 	if not username and not prompt:
 		username = config.username
 	if prompt:
@@ -657,16 +713,33 @@ def login(username = False, prompt = False):
 		print 'Failed to login on %s.' %(config.wiki)
 		raise APIError(query)
 def getArgs(args=False):
+	"""
+	Gets the arguments passed when running
+	from command line.
+	Equivalent to sys.argv[1:]
+	"""
 	if type(args) == type(''):
 		args = args.split(' ')
 	if not args:
 		args = sys.argv[1:]
 	return args
 def setAction(summary):
+	"""
+	Set's global edit summary.
+	A provided summary will overide this.
+	Will be set until the script is killed,
+	or setAction() is called again.
+	"""
 	global EditSummary
 	EditSummary = summary
 
 def setUser(name):
+	"""
+	Set's the username that will be used
+	for all queries and actions.
+	NOTE: You must have already logged in as this
+	user to make an API call.
+	"""
 	global UserName
 	UserName = name
 	print 'Switching username to %s on %s.' %(UserName, config.wiki)
@@ -682,14 +755,23 @@ def showDiff(oldtext, newtext):
 			print line
 
 def parseTemplate(str):
-	str = str.replace('|', ' |') #so that \s catches it
-	str = str.replace('}}', ' }}') #last parm is caught by \s
-	regex = re.compile("(?P<key>\w*?)=(?P<value>\w*?)\s|$", re.MULTILINE)
-	findall = regex.findall(str)
+	"""
+	Parses the provided string
+	and returns a dict with keys being parameters,
+	and value's being the value of the named parameter.
+	It will not pick up on non-named parameters.
+	"""
+	str = str.replace('|', '\n \n|') #so that \n\s\n catches it
+	str = str.replace('}}', '\n \n}}') #last param is caught by \n\s\n
+	regex = re.compile("(?P<key>\w*?)=(?P<value>\w*?)\n\s\n|$", re.MULTILINE)
 	ret = {}
+	findall = []
+	for line in str.splitlines():
+		findall.extend(regex.findall(str))
 	for i in findall:
 		if len(i[0]) != 0:
-			ret[i[0]] = i[1]
+			if not ret.has_key(i[0]):
+				ret[i[0]] = i[1]
 	return ret
 def urlencode(query,doseq=0):
 	"""
