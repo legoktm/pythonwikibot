@@ -110,6 +110,14 @@ def prefixindex(page):
 		list.append(wiki.Page(page['title']))
 	return list
 
+def catlinks(page):
+	print 'Getting categories on %s...' %str(page)
+	gen = links(page, ns=14)
+	list = []
+	for cat in gen:
+		list.extend(category(cat))
+	return list
+
 def recentchanges(limit = 500, nobot = True, onlyanon = False, hidepatrolled = True, nponly = False, wiki=config.wiki):
 	"""
 	Returns a list of articles that were recently changed ([[Special:RecentChanges]])
@@ -188,6 +196,27 @@ def whatlinkshere(page):
 		list.append(wiki.Page(i['title']))
 	return list
 	
+parameterHelp = """\
+-cat              Work on all pages which are in a specific category.
+                  Argument can also be given as "-cat:categoryname" or
+                  as "-cat:categoryname|fromtitle".
+
+-new              Work on the 60 newest pages. If given as -new:x, will work
+                  on the x newest pages.
+
+-file             Read a list of pages to treat from the named text file.
+                  Page titles in the file must be enclosed with [[brackets]].
+                  Argument can also be given as "-file:filename".
+
+-links            Work on all pages that are linked from a certain page.
+                  Argument can also be given as "-links:linkingpagetitle".
+
+-catlinks        Work on all categories that are linked from a certain page.		
+				 Argument can also be given as "-catlinks:linkingpagetitle".
+
+-prefixindex      Work on pages commencing with a common prefix.
+"""
+
 
 
 def handleArgs():
@@ -199,6 +228,13 @@ def handleArgs():
 	...do something
 	"""
 	for arg in wiki.getArgs():
+		if arg.startswith('-catlinks'):
+			if len(arg) == 9:
+				pg = raw_input('Which page should be operated on? ')
+				return catlinks(wiki.Page(pg))
+			else: #means that page has been supplied
+				pg = arg[10:]
+				return catlinks(wiki.Page(pg))	
 		if arg.startswith('-cat'):
 			if len(arg) == 4:
 				cat = raw_input('Which category should be operated on? ')
@@ -234,4 +270,7 @@ def handleArgs():
 					limit = int(arg[5:])
 				except:
 					return recentchanges()
-				return recentchanges(limit=limit)	
+				return recentchanges(limit=limit)		
+	#nothing found
+	print parameterHelp
+	sys.exit(1)
