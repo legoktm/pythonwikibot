@@ -16,6 +16,7 @@ from urllib import quote_plus, _is_unicode
 from datetime import datetime
 import config, timedate
 import sys, os, difflib, StringIO, hashlib
+import BeautifulSoup as BS
 try:
 	import gzip
 except ImportError:
@@ -79,10 +80,7 @@ class API:
 		if loginu:
 			self.username = loginu
 		else:
-			try:
-				self.username = UserName
-			except:
-				self.username = config.username
+			self.username = getUser()
 		self.COOKIEFILE = config.path + '/pywikibot/cookies/'+ self.username +'.data'
 		self.COOKIEFILE = self.COOKIEFILE.replace(' ','_')
 		self.cj = cookielib.LWPCookieJar()
@@ -98,17 +96,20 @@ class API:
 		self.debug = debug
 		self.qcontinue = qcontinue
 		self.maxlag = maxlag
-	def query(self, params, write = False, maxlagtries = 0):
+	def query(self, params, write = False, maxlagtries = 0, format='json'):
 		self.maxlagtries = maxlagtries
+		self.format = format
+		if self.format != ('json' or 'xml'):
+			self.format = 'json' #silently change it
 		self.write = write
 		if os.path.isfile(self.COOKIEFILE):
 			self.cj.load(self.COOKIEFILE)
 		self.params = params
 		if type(self.params) == type({}):
-			self.params['format'] = 'json'
+			self.params['format'] = self.format
 			self.pformat='dict'
 		elif type(self.params) == type(''):
-			self.params += '&format=json'
+			self.params += '&format=' + self.format
 			self.pformat = 'str'
 		if self.write:
 			if self.pformat == 'dict':
@@ -148,7 +149,11 @@ class API:
 		else:
 			data = text
 		
-		newtext = simplejson.loads(data)
+		if self.format == 'json':
+			newtext = simplejson.loads(data)
+		elif self.format == 'xml':
+			newtext = BS.BeautifulStoneSoup(data)
+			
 		#errors should be handled now
 		try:
 			if newtext.has_key('error'): #so that way write errors are handled seperatly
@@ -216,15 +221,18 @@ class Page:
 	A wiki.Page() object.
 	page = page title whether as plain text or [[wikilinked]]. (REQUIRED)
 	wiki = which site is the page on? (optional: defaults to config.wiki)
+	id = id of the page, will be used rather than the page value (optional)
 	"""
-	def __init__(self, page, wiki = config.wiki):
+	def __init__(self, page, wiki = config.wiki, id =False):
 		self.API = API()
 		if '[[' in page:
 			self.page = unicode(re.findall('\[\[(.*?)\]\]', page)[0])
+		elif '{{' in page:
+			self.page = unicode('Template:' + re.findall('\{\{(.*?)\}\}', page)[0])		
 		else:
 			self.page = unicode(page)
+		self.stid = id
 		self.wiki = wiki
-		self.Site = Site(wiki=self.wiki)
 		self.content = False
 		self._basicinfo = False
 		self.langlinks = False
@@ -237,6 +245,10 @@ class Page:
 		self.deletetoken = False
 		self.protecttoken = False
 		self.traffic = False
+		self.oppid = False
+		self.site = Site(wiki=self.wiki)
+		if self.stid:
+			self.__basicinfo()
 	def __str__(self):
 		return self.aslink()
 	def __repr__(self):
@@ -247,16 +259,21 @@ class Page:
 		params = {
 			'action':'query',
 			'prop':'info|revisions|langlinks|categoryinfo',
-			'titles':self.page.encode('utf-8'),
 			'inprop':'protection|talkid|subjectid',
 			'intoken':'edit|move|delete|protect', #even if not admin, just get them...
 			'rvprop':'user|comment|content|timestamp',
 			'lllimit':'max',
 		}
+		if self.stid:
+			params['pageids'] = self.stid
+		else:
+			params['titles'] = self.page.encode('utf-8')
 		self.res = self.API.query(params)['query']
 		res2 = self.res['pages']
 		self.id = str(res2.keys()[0])
 		self._basicinfo = res2[self.id]
+		if self.stid:
+			self.page = self._basicinfo['title']
 		try:
 			self.revisions = self._basicinfo['revisions'][0]
 			self.content = self._basicinfo['revisions'][0]['*']
@@ -270,6 +287,13 @@ class Page:
 			self.langlinks = self._basicinfo['langlinks']
 		except:
 			self.langlinks = None
+		try:
+			self.oppid = self._basicinfo['talkid']
+		except KeyError:
+			try:
+				self.oppid = self._basicinfo['subjectid']
+			except KeyError:
+				self.oppid = None #opposite page doesent
 		self.prot = self._basicinfo['protection']
 		self.edittoken = self._basicinfo['edittoken']
 		self.ns = self._basicinfo['ns']
@@ -343,13 +367,13 @@ class Page:
 		except IOError:
 			date = datetime.now()
 		delta = datetime.now() - date
-		if delta.seconds < 10:
-			print 'Sleeping %s seconds' %(10-delta.seconds)
-			time.sleep(10-delta.seconds)
+		if delta.seconds < PutThrottle:
+			print 'Sleeping %s seconds' %(PutThrottle-delta.seconds)
+			time.sleep(PutThrottle-delta.seconds)
 		else:
 			print 'Last editted %s seconds ago.' %delta.seconds
-			print 'Sleeping for 2 seconds'
-			time.sleep(2)
+			print 'Sleeping for %s seconds' %PutThrottle
+			time.sleep(PutThrottle)
 		#update the file
 		d = datetime.now()
 		newtext = str(d.year) +'|'+ str(d.month) +'|'+ str(d.day) +'|'+ str(d.hour) +'|'+ str(d.minute) +'|'+ str(d.second)
@@ -411,7 +435,7 @@ class Page:
 		if self.ns == 0:
 			return self.page
 		else:
-			return self.page.split(':')[1]
+			return "".join(self.page.split(':')[1:])
 	def namespace(self):
 		"""
 		Returns the namespace as an integer
@@ -453,26 +477,24 @@ class Page:
 		Returns a Page object of the 
 		article page or talk page
 		"""
-		try:
-			nstext = self.page.split(':')[0]
-		except:
-			nstext = ''
-		nsnum = self.Site.namespacelist()[1][nstext]
-		if nsnum == -1 or nsnum == -2:
-			print 'Cannot toggle the talk of a Special or Media page.'
-			return Page(self.page)
-		if self.istalk():
-			nsnewtext = self.Site.namespacelist()[0][nsnum-1]
+		if self.oppid == False:
+			self.__basicinfo()
+		if self.oppid != None: #talk page exists and has id
+			return Page(page='', id=self.oppid)
+		if self.isTalk():
+			newns = self.ns-1
 		else:
-			nsnewtext = self.Site.namespacelist()[0][nsnum+1]
-		tt = nsnewtext + ':' + self.page.split(':')[1]
-		return Page(tt)
+			newns = self.ns+1
+		return Page(self.site.nslist()[newns] + ':' + self.titlewonamespace())
+
 	def isCategory(self):
 		return self.namespace() == 14
 	def isImage(self):
 		return self.namespace() == 6
 	def isTemplate(self):
 		return self.namespace() == 10
+	def isTalk(self):
+		return self.istalk() #for name standardization
 	def isRedirect(self):
 		self.__basicinfo()
 		if self._basicinfo.has_key('redirect'):
@@ -625,35 +647,34 @@ class Page:
 		open.close() #:P
 		self.traffic = int(re.findall('viewed (.*?) times',text)[0])
 		return self.traffic
-		
-		
-		
 
 class Site:
 	"""
-	Class that is mainly internal working, but contains information relevant
-	to the wiki site.
+	A wiki site
 	"""
-	def __init__(self, wiki):
+	def __init__(self, wiki, indexphp=False):
 		self.wiki = wiki
-		self.API = API(self.wiki)
-	def namespacelist(self):
-		params = {
-			'action':'query',
-			'meta':'siteinfo',
-			'siprop':'namespaces',
-		}
-		res = API().query(params)
-		resd = res['query']['namespaces']
-		list = resd.keys()
-		nstotext = {}
-		texttons = {}
-		for ns in list:
-			nstotext[int(ns)] = resd[ns]['*']
-			texttons[resd[ns]['*']] = int(ns)
-		self.nslist = (nstotext,texttons)
-		return self.nslist
-
+		self.API = API(wiki=self.wiki)
+		self.nslist1 = False
+		self.nsretdict = False
+	def __basicinfo(self):
+		params = 'action=query&meta=siteinfo&siprop=namespaces|namespacealiases|general'
+		self.basicinfo = self.API.query(params)['query']
+		self.nslist1 = self.basicinfo['namespaces']
+		self.__handlenslist()
+	def __handlenslist(self):
+		if not self.nslist1:
+			self.__basicinfo()
+		if self.nsretdict:
+			return
+		self.nsretdict = {}
+		for key in self.nslist1.keys():
+			self.nsretdict[int(key)] = self.nslist1[key]['*']
+	def nslist(self):
+		if not self.nsretdict:
+			self.__basicinfo()
+			self.__handlenslist()
+		return self.nsretdict
 """
 Other functions
 """
@@ -716,13 +737,21 @@ def getArgs(args=False):
 	"""
 	Gets the arguments passed when running
 	from command line.
-	Equivalent to sys.argv[1:]
+	Needed so it will remove global args 
 	"""
 	if type(args) == type(''):
 		args = args.split(' ')
 	if not args:
 		args = sys.argv[1:]
-	return args
+	arglist = []
+	for arg in args:
+		if arg.startswith('-user:'):
+			setUser(arg[6:])
+		elif arg.startswith('-pt:'):
+			setThrottle(int(arg[4:]))
+		else: #not a global arg
+			arglist.append(arg)
+	return arglist
 def setAction(summary):
 	"""
 	Set's global edit summary.
@@ -733,6 +762,14 @@ def setAction(summary):
 	global EditSummary
 	EditSummary = summary
 
+def setThrottle(num):
+	"""
+	Sets the put throttle
+	If num < 3: then it defaults to 10 due
+	to overloading a wiki.
+	"""
+	global PutThrottle
+	PutThrottle = int(num)
 def setUser(name):
 	"""
 	Set's the username that will be used
@@ -744,6 +781,16 @@ def setUser(name):
 	UserName = name
 	print 'Switching username to %s on %s.' %(UserName, config.wiki)
 
+def getUser():
+	"""
+	Returns the username that has been set by setUser()
+	or in the userconfig.py
+	"""
+	try:
+		return UserName
+	except:
+		return config.username
+	
 def showDiff(oldtext, newtext):
 	"""
 	Prints a string showing the differences between oldtext and newtext.
@@ -761,9 +808,9 @@ def parseTemplate(str):
 	and value's being the value of the named parameter.
 	It will not pick up on non-named parameters.
 	"""
-	str = str.replace('|', '\n \n|') #so that \n\s\n catches it
-	str = str.replace('}}', '\n \n}}') #last param is caught by \n\s\n
-	regex = re.compile("(?P<key>\w*?)=(?P<value>\w*?)\n\s\n|$", re.MULTILINE)
+	str = str.replace(' ', '_').replace('|', ' |') #so that \s catches it
+	str = str.replace('}}', ' }}') #last param is caught by \s
+	regex = re.compile("(?P<key>\w*?)=(?P<value>\w*?)\s|$", re.MULTILINE)
 	ret = {}
 	findall = []
 	for line in str.splitlines():
@@ -839,3 +886,5 @@ if __name__ == "__main__":
 	login(prompt=True)
 #print this when imported
 print 'Operating as %s on %s.' %(config.username, config.wiki)
+#set some defaults
+PutThrottle = 10
