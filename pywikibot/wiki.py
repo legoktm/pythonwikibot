@@ -563,7 +563,7 @@ class Page:
 				if (dict['type'] == 'move'):
 					retdict['move'] = {'level':dict['level'],'expiry':dict['expiry'], 'cascaded':''}				
 		return retdict
-	def site(self):
+	def getSite(self):
 		return self.wiki
 	def categories(self):
 		params = {'action':'query','titles':self.page,'prop':'categories'}

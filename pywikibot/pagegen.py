@@ -16,7 +16,7 @@ class Category:
 	"""
 	def __init__(self, page, recurse = False):
 		self.page = page
-		self.site = self.page.site()
+		self.site = self.page.getSite()
 		if not self.page.isCategory():
 			raise wiki.NotCategory(page.title())
 		self.API = wiki.API(wiki=self.site)
@@ -50,7 +50,7 @@ class Category:
 def category(page, limit = False):
 	if not page.isCategory():
 		raise wiki.NotCategory(page.title())
-	API = wiki.API(wiki=page.site())
+	API = wiki.API(wiki=page.getSite())
 	print 'Getting %s...' %page.aslink()
 	params = {
 		'action':'query',
@@ -76,7 +76,7 @@ def transclude(page):
 	"""
 	Returns pages that transclude a certain template
 	"""
-	API = wiki.API(wiki=page.site())
+	API = wiki.API(wiki=page.getSite())
 	print 'Getting references to [[%s]]...' %(page.title())
 	params = {
 		'action':'query',
@@ -94,7 +94,7 @@ def prefixindex(page):
 	"""
 	Returns list of pages with prefix of the page ([[Special:PrefixIndex]])
 	"""
-	API = wiki.API(wiki=page.site())
+	API = wiki.API(wiki=page.getSite())
 	ns = page.namespace()
 	prefix = page.titlewonamespace()
 	params = {
@@ -163,7 +163,7 @@ def links(page, ns=None):
 	Not Special:WhatLinksHere
 	ns is an (optional) int() which is the only namespace returned
 	"""
-	API = wiki.API(wiki=page.site())
+	API = wiki.API(wiki=page.getSite())
 	params = {
 		'action':'query',
 		'titles':page.title(),
@@ -183,7 +183,7 @@ def whatlinkshere(page):
 	"""
 	[[Special:WhatLinksHere]]
 	"""
-	API = wiki.API(wiki=page.site())
+	API = wiki.API(wiki=page.getSite())
 	params = {
 		'action':'query',
 		'bltitle':page.title(),
