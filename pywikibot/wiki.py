@@ -107,10 +107,15 @@ class API:
 		self.params = params
 		if type(self.params) == type({}):
 			self.params['format'] = self.format
-			self.pformat='dict'
+			self.pformat = 'dict'
 		elif type(self.params) == type(''):
 			self.params += '&format=' + self.format
 			self.pformat = 'str'
+		elif type(self.params) == type(u''):
+			self.params += '&format=' + self.format
+			self.pformat = 'str'
+		else:
+			raise APIError('Invalid Parameter format')
 		if self.write:
 			if self.pformat == 'dict':
 				self.params['maxlag'] = self.maxlag
@@ -224,11 +229,11 @@ class Page:
 	id = id of the page, will be used rather than the page value (optional)
 	"""
 	def __init__(self, page, wiki = config.wiki, id =False):
-		self.API = API()
+		self.API = API(wiki=wiki)
 		if '[[' in page:
 			self.page = unicode(re.findall('\[\[(.*?)\]\]', page)[0])
 		elif '{{' in page:
-			self.page = unicode('Template:' + re.findall('\{\{(.*?)\}\}', page)[0])		
+			self.page = unicode('Template:' + re.findall('\{\{(.*?)\}\}', page)[0].split('|')[0])		
 		else:
 			self.page = unicode(page)
 		self.stid = id
@@ -480,12 +485,12 @@ class Page:
 		if self.oppid == False:
 			self.__basicinfo()
 		if self.oppid != None: #talk page exists and has id
-			return Page(page='', id=self.oppid)
+			return Page(page='', id=self.oppid, wiki=self.wiki)
 		if self.isTalk():
 			newns = self.ns-1
 		else:
 			newns = self.ns+1
-		return Page(self.site.nslist()[newns] + ':' + self.titlewonamespace())
+		return Page(self.site.nslist()[newns] + ':' + self.titlewonamespace(),wiki=self.wiki)
 
 	def isCategory(self):
 		return self.namespace() == 14
@@ -570,7 +575,7 @@ class Page:
 		res = self.API.query(params)['query']['pages']
 		list = []
 		for item in res[res.keys()[0]]['categories']:
-			list.append(Page(item['title']))
+			list.append(Page(item['title'], wiki=self.wiki))
 		return list
 	def templates(self):
 		params = {'action':'query','titles':self.page,'prop':'templates','tllimit':'max'}
@@ -588,7 +593,7 @@ class Page:
 		list = []
 		for id in res:
 			title = id['title']
-			list.append(Page(title))
+			list.append(Page(title, wiki=self.wiki))
 		return list
 	def redirects(self):
 		return self.whatlinkshere(onlyredir = True)
@@ -647,7 +652,10 @@ class Page:
 		open.close() #:P
 		self.traffic = int(re.findall('viewed (.*?) times',text)[0])
 		return self.traffic
-
+	def id(self):
+		if not self.id:
+			self.__basicinfo()
+		return self.id
 class Site:
 	"""
 	A wiki site
