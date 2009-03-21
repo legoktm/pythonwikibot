@@ -24,10 +24,8 @@ def transclude(page):
 		'eilimit':'max',
 	}
 	res = API.query(params)
-	list = []
 	for page in res['query']['embeddedin']:
 		yield wiki.Page(page['title'])
-	return list
 
 def prefixindex(page):
 	"""
@@ -88,7 +86,6 @@ def recentchanges(limit = 500, nobot = True, onlyanon = False, hidepatrolled = T
 		print 'Fetching the %s latest edits' %limit
 	API = wiki.API(qcontinue=False, wiki=wiki)
 	res = API.query(params)['query']['recentchanges']
-	list = []
 	for page in res:
 		yield wiki.Page(page['title'])
 
