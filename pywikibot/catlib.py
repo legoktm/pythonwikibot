@@ -35,5 +35,40 @@ class Category:
 				if recurse:
 					for i in subcat.subcats(recurse):
 						yield i
-	
+		else:
+			for subcat in self._subcats:
+				yield subcat
+				if recurse:
+					for i in subcat.subcats(recurse):
+						yield i
+	def articles(self, recurse=False):
+		"""
+		Returns all articles in the category
+		"""
+		print 'Getting %s...' %self.page.aslink()	
+		params = 'action=query&list=categorymembers&cmlimit=max&cmnamespace=0&cmtitle=' + self.title
+		res = self.API.query(params)['query']['categorymembers']
+		if not isinstance(recurse, bool) and recurse:
+			recurse = recurse - 1
+		for i in res:
+			yield wiki.Page(i['title'], wiki=self.page.getSite())
+			if recurse:
+				for subcat in self.subcats():
+					for art in subcat.articles(recurse)
+						yield art
+	def all(self, recurse=False):
+		"""
+		Returns all articles in the category
+		"""
+		print 'Getting %s...' %self.page.aslink()	
+		params = 'action=query&list=categorymembers&cmlimit=max&cmtitle=' + self.title
+		res = self.API.query(params)['query']['categorymembers']
+		if not isinstance(recurse, bool) and recurse:
+			recurse = recurse - 1
+		for i in res:
+			yield wiki.Page(i['title'], wiki=self.page.getSite())
+			if recurse:
+				for subcat in self.subcats(recurse):
+					for mem in subcat.memvers(recurse)
+						yield mem				
 		

@@ -1,4 +1,4 @@
-#!usr/bin/python
+agegen#!usr/bin/python
 #
 # (C) Legoktm 2009
 # Released under the MIT License
@@ -10,7 +10,7 @@ import wiki, config, catlib
 import sys, re
 
 def category(page, recurse=False):
-	return catlib.Category(page, recurse=recurse)
+	return catlib.Category.all(page, recurse=recurse)
 def transclude(page):
 	"""
 	Returns pages that transclude a certain template
