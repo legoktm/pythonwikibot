@@ -10,7 +10,7 @@ import wiki, config, catlib
 import sys, re
 
 def category(page, recurse=False):
-	return catlib.Category.all(page, recurse=recurse)
+	return catlib.Category(page).all(recurse=recurse)
 def transclude(page):
 	"""
 	Returns pages that transclude a certain template
