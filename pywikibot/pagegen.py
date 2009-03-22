@@ -1,4 +1,4 @@
-agegen#!usr/bin/python
+#!usr/bin/python
 #
 # (C) Legoktm 2009
 # Released under the MIT License

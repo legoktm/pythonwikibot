@@ -1,6 +1,7 @@
 #!usr/bin/python
+#-*- coding:utf-8 -*-
 import wiki
-
+__version__ = '$Id$'
 class Category:
 	
 	def __init__(self, page):
@@ -54,7 +55,7 @@ class Category:
 			yield wiki.Page(i['title'], wiki=self.page.getSite())
 			if recurse:
 				for subcat in self.subcats():
-					for art in subcat.articles(recurse)
+					for art in subcat.articles(recurse):
 						yield art
 	def all(self, recurse=False):
 		"""
