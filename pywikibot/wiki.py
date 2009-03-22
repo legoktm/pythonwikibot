@@ -77,19 +77,24 @@ class API:
 	
 	def __init__(self, wiki = config.wiki, login=False, loginu=False, debug=False, qcontinue = True, maxlag = config.maxlag):
 		#set up the cookies
+		global CJ
 		if loginu:
 			self.username = loginu
+			self.COOKIEFILE = config.path + '/pywikibot/cookies/'+ self.username +'.data'
+			CJ = cookielib.LWPCookieJar() #reset
 		else:
-			self.username = getUser()
-		self.COOKIEFILE = config.path + '/pywikibot/cookies/'+ self.username +'.data'
-		self.COOKIEFILE = self.COOKIEFILE.replace(' ','_')
-		self.cj = cookielib.LWPCookieJar()
+			global COOKIEFILE
+			self.COOKIEFILE = COOKIEFILE
 		if os.path.isfile(self.COOKIEFILE):
-			self.cj.load(self.COOKIEFILE)
+			CJ.load(self.COOKIEFILE)
 		elif not login:
 			raise NotLoggedIn('Please login by first running wiki.py')
 		if wiki == 'commons':
 			self.wiki = 'commons.wikimedia'
+		elif wiki == 'meta':
+			self.wiki = 'meta.wikimedia'
+		elif wiki == 'mediawiki':
+			self.wiki = 'www.mediawiki' #weird
 		else:
 			self.wiki = wiki
 		self.login = login
@@ -97,13 +102,12 @@ class API:
 		self.qcontinue = qcontinue
 		self.maxlag = maxlag
 	def query(self, params, write = False, maxlagtries = 0, format='json'):
+		global CJ
 		self.maxlagtries = maxlagtries
 		self.format = format
 		if self.format != ('json' or 'xml'):
 			self.format = 'json' #silently change it
 		self.write = write
-		if os.path.isfile(self.COOKIEFILE):
-			self.cj.load(self.COOKIEFILE)
 		self.params = params
 		if type(self.params) == type({}):
 			self.params['format'] = self.format
@@ -134,7 +138,7 @@ class API:
 		}
 		if gzip:
 			self.headers['Accept-Encoding'] = 'gzip'
-		self.opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(self.cj))
+		self.opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(CJ))
 		urllib2.install_opener(self.opener)
 		self.request = urllib2.Request(config.apipath %(self.wiki), self.encodeparams, self.headers)
 #		print 'Querying API'
@@ -143,7 +147,8 @@ class API:
 		except urllib2.URLError, e:
 			raise APIError('urllib2.URLError:' + str(e))
 		if self.login:
-			self.cj.save(self.COOKIEFILE)
+			CJ.save(self.COOKIEFILE)
+			CJ.load(self.COOKIEFILE) #refresh
 #			self.cj.save(self.COOKIEFILE + 'old')
 		text = self.response.read()
 		if gzip:
@@ -384,7 +389,15 @@ class Page:
 		newtext = str(d.year) +'|'+ str(d.month) +'|'+ str(d.day) +'|'+ str(d.hour) +'|'+ str(d.minute) +'|'+ str(d.second)
 		write = open(FILE, 'w')
 		write.write(newtext)
-		write.close()	
+		write.close()
+		#check whether we need to quit
+		if config.quitonmess:
+			global NumEdits
+			if NumEdits == 5:
+				checklogin()
+				NumEdits = 0
+			else:
+				NumEdits += 1
 	def put(self, newtext, summary=False, watch = False, newsection = False):
 		"""
 		Edits the wikipage.
@@ -399,7 +412,7 @@ class Page:
 				summary = EditSummary
 			except NameError:
 				summary = '[[WP:BOT|Bot]]: Automated edits using [[en:w:User:Legobot/PythonWikiBot|PythonWikiBot]]' 
-		md5 = hashlib.md5(newtext).hexdigest()
+		md5 = hashlib.md5(newtext).hexdigest() #for safety
 		if not self.edittoken:
 			self.__basicinfo()
 		if self.edittoken == 'NO':
@@ -423,6 +436,8 @@ class Page:
 		if res.has_key('error'):
 			if res['error']['code'] == 'protectedpage':
 				raise LockedPage(res['error']['info'])
+			elif res['error']['info'] == 'protectedpage': #wtf problem
+				raise LockedPage(res['error']['code'])				
 			raise APIError(res['error'])
 		if res['edit']['result'] == 'Success':
 			print 'Changing [[%s]] was successful.' %self.page
@@ -649,7 +664,7 @@ class Page:
 		url = 'http://stats.grok.se/en/%s%s/%s' %(year, month, self.page)
 		open = urllib.urlopen(url)
 		text = open.read()
-		open.close() #:P
+		open.close() # :P
 		self.traffic = int(re.findall('viewed (.*?) times',text)[0])
 		return self.traffic
 	def id(self):
@@ -660,7 +675,7 @@ class Site:
 	"""
 	A wiki site
 	"""
-	def __init__(self, wiki, indexphp=False):
+	def __init__(self, wiki):
 		self.wiki = wiki
 		self.API = API(wiki=self.wiki)
 		self.nslist1 = False
@@ -788,7 +803,8 @@ def setUser(name):
 	global UserName
 	UserName = name
 	print 'Switching username to %s on %s.' %(UserName, config.wiki)
-
+	global COOKIEFILE #update it
+	COOKIEFILE = config.path + '/pywikibot/cookies/'+ getUser() +'.data'
 def getUser():
 	"""
 	Returns the username that has been set by setUser()
@@ -896,3 +912,10 @@ if __name__ == "__main__":
 print 'Operating as %s on %s.' %(config.username, config.wiki)
 #set some defaults
 PutThrottle = 10
+NumEdits = 0
+#fix all of the cookiefile stuff
+COOKIEFILE = config.path + '/pywikibot/cookies/'+ getUser() +'.data'
+COOKIEFILE = COOKIEFILE.replace(' ','_')
+CJ = cookielib.LWPCookieJar()
+if os.path.isfile(COOKIEFILE):
+	CJ.load(COOKIEFILE)
