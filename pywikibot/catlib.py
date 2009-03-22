@@ -70,6 +70,6 @@ class Category:
 			yield wiki.Page(i['title'], wiki=self.page.getSite())
 			if recurse:
 				for subcat in self.subcats(recurse):
-					for mem in subcat.memvers(recurse)
+					for mem in subcat.memvers(recurse):
 						yield mem				
 		
