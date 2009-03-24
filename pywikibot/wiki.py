@@ -875,7 +875,7 @@ def urlencode(query,doseq=0):
 		# preserve old behavior
 		for k, v in query:
 			k = quote_plus(str(k))
-			v = quote_plus(str(v))
+			v = quote_plus(str(v.encode('utf-8')))
 			l.append(k + '=' + v)
 	else:
 		for k, v in query:
