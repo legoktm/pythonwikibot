@@ -338,11 +338,13 @@ class Page:
 		self.starttimestamp = self._basicinfo['starttimestamp']
 		
 		return self._basicinfo
-	def title(self):
+	def title(self, regex=False):
 		"""
 		Returns a unicode string of the page title.
 		"""
-		return self.page
+		if not regex:
+			return self.page
+		return self.page.replace('(','\(').replace(')','\)')
 	def get(self, force = False):
 		"""
 		Returns the wikitext of the page.
@@ -875,7 +877,13 @@ def urlencode(query,doseq=0):
 		# preserve old behavior
 		for k, v in query:
 			k = quote_plus(str(k))
-			v = quote_plus(str(v.encode('utf-8')))
+			try:
+				v = quote_plus(str(v.encode('utf-8')))
+			except:
+				try:
+					v = quote_plus(str(v))
+				except:
+					v = quote_plus(unicode(v))
 			l.append(k + '=' + v)
 	else:
 		for k, v in query:
