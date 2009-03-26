@@ -18,8 +18,8 @@ def doProject(tag, projname, gen):
 		rds1.append('{{' + page.titlewonamespace())
 	list = []
 	for page in gen:
-		print page.title()
 		try:
+			print page.title()
 			dopage(page, tag1, rds1, projname)
 		except UnicodeDecodeError:
 			print 'Skipping %s because of UnicodeDecodeError.' %page.title()
@@ -43,8 +43,8 @@ def dopage(page, tag, rds, projname):
 		print page.title() + ' doesn\'t exist.'
 		page.put(tag, summary)
 		return
-	regex = tag.replace('_',' ')
-	if regex.lower() in wikitext.lower().replace('_',' '):
+	regex = tag.replace('}}','').replace('{','\{').split('|')[0]
+	if re.search(regex, wikitext, re.IGNORECASE):
 		print page.title() + ' has template1 found passing.'
 		return
 	if rds:

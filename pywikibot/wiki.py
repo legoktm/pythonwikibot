@@ -414,7 +414,10 @@ class Page:
 				summary = EditSummary
 			except NameError:
 				summary = '[[WP:BOT|Bot]]: Automated edits using [[en:w:User:Legobot/PythonWikiBot|PythonWikiBot]]' 
-		md5 = hashlib.md5(newtext).hexdigest() #for safety
+		try:
+			md5 = hashlib.md5(newtext).hexdigest() #for safety
+		except:
+			md5 = False
 		if not self.edittoken:
 			self.__basicinfo()
 		if self.edittoken == 'NO':
@@ -426,8 +429,9 @@ class Page:
 			'summary':summary,
 			'token':self.edittoken,
 			'starttimestamp':self.starttimestamp,
-			'md5':md5,
 		}
+		if md5:
+			params['md5'] = md5
 		print 'Going to change [[%s]]' %(self.page)
 		if watch:
 			params['watch'] = ''
