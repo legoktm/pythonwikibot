@@ -17,7 +17,7 @@ from pywikibot import wiki, pagegen, config
 readDelay  = 20	# seconds
 writeDelay = 60 # seconds
 usernames = {
-	'en.wikipedia':'Legobot II'
+	'en.wikipedia.org':'Legobot II'
 }
 wiki.setUser(usernames[config.wiki])
 def checktalk():
@@ -105,6 +105,7 @@ def main():
 	print 'Done'
 	
 if __name__ == "__main__":
+	wiki.getArgs() #so that we get the site...
 	while True:
 		main()
 		print 'Sleeping 600 seconds'

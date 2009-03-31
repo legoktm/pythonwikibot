@@ -11,6 +11,13 @@ def getversion():
 def getversiondict():
 		if wiki:
 			id = wiki.__version__
+			dict = {
+				'rev':id.split(' ')[2],
+				'date':id.split(' ')[3],
+				'ts':id.split(' ')[4],
+				'user':id.split(' ')[5],
+			}
+			return dict
 		else:
 			wikifile = open('wiki.py','r')
 			text = wikifile.read()
@@ -18,13 +25,12 @@ def getversiondict():
 			Re = re.compile("\$Id: wiki\.py (.*?) \$")
 			id = Re.findall(text)[0]
 		dict = {
-			'rev':id.split(' ')[2],
-			'date':id.split(' ')[3],
-			'ts':id.split(' ')[4],
-			'user':id.split(' ')[5],
+			'rev':id.split(' ')[0],
+			'date':id.split(' ')[1],
+			'ts':id.split(' ')[2],
+			'user':id.split(' ')[3],
 		}
 		return dict
-getversion()
 
 if __name__ == '__main__':
 	print 'PythonWikiBot: '+ getversion()

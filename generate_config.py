@@ -24,7 +24,7 @@ def main():
 	else:
 		mess = False
 	content += '\n\"\"\"Quit when finding new messages?\"\"\"\nquitonmess = ' + str(mess)
-	wiki = raw_input("""Wiki to query... in format of 'xx.project' """)
+	wiki = raw_input("""Wiki to query... in format of 'xx.project.org' """)
 	ts = raw_input(""" Toolserver Account Username ([f]alse if none) """)
 	if ts.lower() == ('f' or 'false'):
 		ts = False
@@ -33,7 +33,7 @@ def main():
 		content += '\nts = \'%s\'' %(ts.lower())
 	else:
 		content += '\nts = ' + str(ts)
-	content += '\n\"\"\" Wiki to query... in format of \'xx.project\' \"\"\"\nwiki = \'%s\'' %(wiki)
+	content += '\n\"\"\" Wiki to query... in format of \'xx.project.org\' \"\"\"\nwiki = \'%s\'' %(wiki)
 	maxlag = raw_input('How much servers have to be lagged to wait and then retry (maxlag is recommended 5): ')
 	try:
 		int(maxlag)
@@ -41,7 +41,6 @@ def main():
 		print 'Please enter a valid number.'
 		maxlag = raw_input('How much servers have to be lagged to wait and then retry (maxlag is recommended 5): ')
 	content += '\n\"\"\"How much servers have to be lagged to wait and then retry (maxlag is recommended 5)\"\"\"\nmaxlag = ' + str(maxlag)
-	content += '\n\"\"\"API path for the wiki, where %s is the wiki above\"\"\"\napipath = \'http://%s.org/w/api.php\''
 	content += '\npath = \'' + os.environ['PWD'] + '\' #please do not manually modify'
 	file.write(content)
 	file.close()

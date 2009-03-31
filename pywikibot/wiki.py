@@ -1,4 +1,4 @@
-#!usr/bin/python
+	#!usr/bin/python
 # -*- coding: utf-8 -*-
 """
 
@@ -10,23 +10,31 @@ See COPYING for full License
 
 """
 __version__ = '$Id$'
-
 import urllib2, urllib, re, time, getpass, cookielib
 from urllib import quote_plus, _is_unicode
 from datetime import datetime
-import config, timedate
-import sys, os, difflib, StringIO, hashlib
+import config, timedate, families
+import sys, os, difflib, hashlib
 import BeautifulSoup as BS
 try:
-	import gzip
-except ImportError:
+	import gzip, StringIO
+except ImportError, e:
+	print 'WARNING: Please install %s to save bandwith costs.' %(str(e).split('named ')[1])
+	time.sleep(1)
 	gzip = False
 try:
 	import json as simplejson
 except ImportError:
 	import simplejson
+
+reload(sys)
+sys.setdefaultencoding('utf-8')
+
 class APIError(Exception):
 	"""General API error and base class for all errors"""
+
+class NoWiki(APIError):
+	"""Wiki Specified doesn't have an entry in families.py"""
 
 class NotLoggedIn(APIError):
 	"""User is not logged in"""
@@ -75,7 +83,7 @@ class NoTSUsername(NoUsername):
 
 class API:
 	
-	def __init__(self, wiki = config.wiki, login=False, loginu=False, debug=False, qcontinue = True, maxlag = config.maxlag):
+	def __init__(self, wiki=False, login=False, loginu=False, debug=False, qcontinue = True, maxlag = config.maxlag):
 		#set up the cookies
 		global CJ
 		if loginu:
@@ -89,14 +97,9 @@ class API:
 			CJ.load(self.COOKIEFILE)
 		elif not login:
 			raise NotLoggedIn('Please login by first running wiki.py')
-		if wiki == 'commons':
-			self.wiki = 'commons.wikimedia'
-		elif wiki == 'meta':
-			self.wiki = 'meta.wikimedia'
-		elif wiki == 'mediawiki':
-			self.wiki = 'www.mediawiki' #weird
-		else:
-			self.wiki = wiki
+		if not wiki:
+			self.apiurl = getWiki().getAPI()
+		self.apiurl = wiki
 		self.login = login
 		self.debug = debug
 		self.qcontinue = qcontinue
@@ -140,7 +143,8 @@ class API:
 			self.headers['Accept-Encoding'] = 'gzip'
 		self.opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(CJ))
 		urllib2.install_opener(self.opener)
-		self.request = urllib2.Request(config.apipath %(self.wiki), self.encodeparams, self.headers)
+		print self.apiurl
+		self.request = urllib2.Request(self.apiurl, self.encodeparams, self.headers)
 #		print 'Querying API'
 		try:
 			self.response = urllib2.urlopen(self.request)
@@ -151,6 +155,7 @@ class API:
 			CJ.load(self.COOKIEFILE) #refresh
 #			self.cj.save(self.COOKIEFILE + 'old')
 		text = self.response.read()
+		self.response.close()
 		if gzip:
 			compressedstream = StringIO.StringIO(text)
 			gzipper = gzip.GzipFile(fileobj=compressedstream)
@@ -230,11 +235,13 @@ class Page:
 	"""
 	A wiki.Page() object.
 	page = page title whether as plain text or [[wikilinked]]. (REQUIRED)
-	wiki = which site is the page on? (optional: defaults to config.wiki)
+	wiki = which site is the page on? A Site() object given by getWiki() (OPTIONAL)
 	id = id of the page, will be used rather than the page value (optional)
 	"""
-	def __init__(self, page, wiki = config.wiki, id =False):
-		self.API = API(wiki=wiki)
+	def __init__(self, page, wiki=False, id =False):
+		if not wiki:
+			wiki = getWiki()
+		self.API = API(wiki=wiki.apiurl())
 		if '[[' in page:
 			self.page = unicode(re.findall('\[\[(.*?)\]\]', page)[0])
 		elif '{{' in page:
@@ -256,7 +263,7 @@ class Page:
 		self.protecttoken = False
 		self.traffic = False
 		self.oppid = False
-		self.site = Site(wiki=self.wiki)
+#		self.site = Site(wiki=self.wiki)
 		if self.stid:
 			self.__basicinfo()
 	def __str__(self):
@@ -278,7 +285,16 @@ class Page:
 			params['pageids'] = self.stid
 		else:
 			params['titles'] = self.page.encode('utf-8')
-		self.res = self.API.query(params)['query']
+		
+		res = self.API.query(params)
+		try:
+			self.res=res['query']
+		except KeyError:
+			try:
+				warnings = res['warnings']['query']['*']
+				raise APIError(warnings)
+			except KeyError:
+				raise APIError(res) #wtf..
 		res2 = self.res['pages']
 		self.id = str(res2.keys()[0])
 		self._basicinfo = res2[self.id]
@@ -303,7 +319,7 @@ class Page:
 			try:
 				self.oppid = self._basicinfo['subjectid']
 			except KeyError:
-				self.oppid = None #opposite page doesent
+				self.oppid = None #opposite page doesent exist
 		self.prot = self._basicinfo['protection']
 		self.edittoken = self._basicinfo['edittoken']
 		self.ns = self._basicinfo['ns']
@@ -511,7 +527,7 @@ class Page:
 			newns = self.ns-1
 		else:
 			newns = self.ns+1
-		return Page(self.site.nslist()[newns] + ':' + self.titlewonamespace(),wiki=self.wiki)
+		return Page(self.wiki.nslist()[newns] + ':' + self.titlewonamespace(),wiki=self.wiki)
 
 	def isCategory(self):
 		return self.namespace() == 14
@@ -681,9 +697,15 @@ class Site:
 	"""
 	A wiki site
 	"""
-	def __init__(self, wiki):
-		self.wiki = wiki
-		self.API = API(wiki=self.wiki)
+	def __init__(self, url):
+		self.shorturl = url
+		try:
+			self.wiki = families.wikilist[url]
+		except KeyError:
+			raise NoWiki(url)
+		self.apiurl = self.wiki['baseurl'] + self.wiki['api']
+		self.indexurl = self.wiki['baseurl'] + self.wiki['index']
+		self.API = API(wiki=self.apiurl)
 		self.nslist1 = False
 		self.nsretdict = False
 	def __basicinfo(self):
@@ -702,8 +724,21 @@ class Site:
 	def nslist(self):
 		if not self.nsretdict:
 			self.__basicinfo()
-			self.__handlenslist()
 		return self.nsretdict
+	def getAPI(self):
+		return self.apiurl
+	def __str__(self):
+		return 'Site{\'%s\'}' %self.shorturl
+	def __repr__(self):
+		return 'Site{\'%s\'}' %self.shorturl
+
+
+def getWiki(url=False):
+	if url:
+		return Site(url)
+	return Site(config.wiki)
+def setWiki(url):
+	config.wiki = url
 """
 Other functions
 """
@@ -778,6 +813,8 @@ def getArgs(args=False):
 			setUser(arg[6:])
 		elif arg.startswith('-pt:'):
 			setThrottle(int(arg[4:]))
+		elif arg.startswith('-site:'):
+			setWiki(arg[6:])
 		else: #not a global arg
 			arglist.append(arg)
 	return arglist
@@ -850,6 +887,15 @@ def parseTemplate(str):
 			if not ret.has_key(i[0]):
 				ret[i[0]] = i[1]
 	return ret
+
+def getURL(url, headers=False):
+	if not headers:
+		headers = {'User-agent':getUser()}
+	request = urllib2.Request(url, headers=headers)
+	response = urllib2.urlopen(request)
+	text = response.read()
+	response.close()
+	return text
 def urlencode(query,doseq=0):
 	"""
 	Hack of urllib's urlencode function, which can handle
@@ -915,11 +961,6 @@ def urlencode(query,doseq=0):
 						l.append(k + '=' + quote_plus(str(elt)))
 	return '&'.join(l)
 
-	
-if __name__ == "__main__":
-	print 'PythonWikiBot version 0.1'
-	print '(C) 2008-2009 PythonWikiBot team MIT License'
-	login(prompt=True)
 #print this when imported
 print 'Operating as %s on %s.' %(config.username, config.wiki)
 #set some defaults
@@ -931,3 +972,9 @@ COOKIEFILE = COOKIEFILE.replace(' ','_')
 CJ = cookielib.LWPCookieJar()
 if os.path.isfile(COOKIEFILE):
 	CJ.load(COOKIEFILE)
+
+if __name__ == "__main__":
+	import version
+	print 'PythonWikiBot version 0.1'
+	print '(C) 2008-2009 PythonWikiBot team MIT License'
+	login(prompt=True)

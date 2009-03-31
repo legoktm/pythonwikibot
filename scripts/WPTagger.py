@@ -22,7 +22,9 @@ def doProject(tag, projname, gen):
 			print page.title()
 			dopage(page, tag1, rds1, projname)
 		except UnicodeDecodeError:
-			print 'Skipping %s because of UnicodeDecodeError.' %page.title()
+			print 'Skipping because of UnicodeDecodeError.'
+		except UnicodeEncodeError:
+			print 'Skipping because of UnicodeEncodeError.'
 		time.sleep(2.5)
 
 def dopage(page, tag, rds, projname):
