@@ -103,10 +103,7 @@ def get_pages():
 	text = state0 = vapage.get()
 	num = 0
 	for page in gen:
-		if num < 75:
-			text = do_page(page, text)
-			time.sleep(10)
-		num += 1
+		text = do_page(page, text)
 	wiki.showDiff(state0, text)
 	vapage.put(text, 'Bot: Updating Vital Articles')
 if __name__ == '__main__':
