@@ -12,24 +12,32 @@ enwiki = {
 	'api':'/w/api.php',
 	'index':'/w/index.php',
 	'db':['enwiki_p','sql-s1'],
+	'lang':'en',
+	'fam':'wikipedia',
 }
 frwiki = {
 	'baseurl':'http://fr.wikipedia.org',
 	'api':'/w/api.php',
 	'index':'/w/index.php',
 	'db':['frwiki_p','sql-s3'],
+	'lang':'fr',
+	'fam':'wikipedia',
 }
 dewiki = {
 	'baseurl':'http://de.wikipedia.org',
 	'api':'/w/api.php',
 	'index':'/w/index.php',
 	'db':['dewiki_p','sql-s2'],
+	'lang':'de',
+	'fam':'wikipedia',
 }
 commonscommons = {
 	'baseurl':'http://commons.wikimedia.org',
 	'api':'/w/api.php',
 	'index':'/w/index.php',
 	'db':['commonswiki_p','sql-s2'],
+	'lang':'commons',
+	'fam':'commons',
 }
 
 """

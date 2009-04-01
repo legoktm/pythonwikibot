@@ -83,25 +83,32 @@ class NoTSUsername(NoUsername):
 
 class API:
 	
-	def __init__(self, wiki=False, login=False, loginu=False, debug=False, qcontinue = True, maxlag = config.maxlag):
+	def __init__(self, wiki=False, login=False, loginu=False, qcontinue = True, maxlag = config.maxlag, url=False):
 		#set up the cookies
+		if not wiki:
+			wiki = getWiki()
 		global CJ
 		if loginu:
 			self.username = loginu
-			self.COOKIEFILE = config.path + '/pywikibot/cookies/'+ self.username +'.data'
+			self.COOKIEFILE = config.path + '/pywikibot/cookies/'+ loginu +'-'+ str(wiki).replace('.','_') + '.data'
 			CJ = cookielib.LWPCookieJar() #reset
 		else:
 			global COOKIEFILE
 			self.COOKIEFILE = COOKIEFILE
 		if os.path.isfile(self.COOKIEFILE):
 			CJ.load(self.COOKIEFILE)
-		elif not login:
-			raise NotLoggedIn('Please login by first running wiki.py')
-		if not wiki:
-			self.apiurl = getWiki().getAPI()
-		self.apiurl = wiki
+		if not wiki and not url:
+			self.wiki = getWiki()
+			self.api = False
+		elif url:
+			self.wiki = False
+			self.api = wiki
+		else:
+			self.wiki = wiki
+			self.api = False
 		self.login = login
-		self.debug = debug
+		global DebugValue
+		self.debug = DebugValue
 		self.qcontinue = qcontinue
 		self.maxlag = maxlag
 	def query(self, params, write = False, maxlagtries = 0, format='json'):
@@ -139,12 +146,13 @@ class API:
 			"User-agent": config.username,
 			"Content-length": len(self.encodeparams),
 		}
+		if not self.api:
+			self.api = self.wiki.getAPI()
 		if gzip:
 			self.headers['Accept-Encoding'] = 'gzip'
 		self.opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(CJ))
 		urllib2.install_opener(self.opener)
-		print self.apiurl
-		self.request = urllib2.Request(self.apiurl, self.encodeparams, self.headers)
+		self.request = urllib2.Request(self.api, self.encodeparams, self.headers)
 #		print 'Querying API'
 		try:
 			self.response = urllib2.urlopen(self.request)
@@ -241,7 +249,7 @@ class Page:
 	def __init__(self, page, wiki=False, id =False):
 		if not wiki:
 			wiki = getWiki()
-		self.API = API(wiki=wiki.apiurl())
+		self.API = API(wiki=wiki)
 		if '[[' in page:
 			self.page = unicode(re.findall('\[\[(.*?)\]\]', page)[0])
 		elif '{{' in page:
@@ -705,11 +713,13 @@ class Site:
 			raise NoWiki(url)
 		self.apiurl = self.wiki['baseurl'] + self.wiki['api']
 		self.indexurl = self.wiki['baseurl'] + self.wiki['index']
-		self.API = API(wiki=self.apiurl)
+		self.API = False
 		self.nslist1 = False
 		self.nsretdict = False
 	def __basicinfo(self):
 		params = 'action=query&meta=siteinfo&siprop=namespaces|namespacealiases|general'
+		if not self.API:
+			self.API = API(url=self.apiurl)
 		self.basicinfo = self.API.query(params)['query']
 		self.nslist1 = self.basicinfo['namespaces']
 		self.__handlenslist()
@@ -727,10 +737,14 @@ class Site:
 		return self.nsretdict
 	def getAPI(self):
 		return self.apiurl
+	def getIndex(self):
+		return self.indexurl
 	def __str__(self):
-		return 'Site{\'%s\'}' %self.shorturl
+		return self.shorturl
 	def __repr__(self):
-		return 'Site{\'%s\'}' %self.shorturl
+		return self.shorturl
+	def langcode(self):
+		return self.wiki['code']
 
 
 def getWiki(url=False):
@@ -738,6 +752,7 @@ def getWiki(url=False):
 		return Site(url)
 	return Site(config.wiki)
 def setWiki(url):
+	print 'Changing wiki to ' + url
 	config.wiki = url
 """
 Other functions
@@ -815,6 +830,9 @@ def getArgs(args=False):
 			setThrottle(int(arg[4:]))
 		elif arg.startswith('-site:'):
 			setWiki(arg[6:])
+		elif arg == '-debug':
+			setDebug(True)
+			print config.wiki
 		else: #not a global arg
 			arglist.append(arg)
 	return arglist
@@ -857,7 +875,9 @@ def getUser():
 		return UserName
 	except:
 		return config.username
-	
+def setDebug(value = False):
+	global DebugValue
+	DebugValue = value
 def showDiff(oldtext, newtext):
 	"""
 	Prints a string showing the differences between oldtext and newtext.
@@ -895,7 +915,15 @@ def getURL(url, headers=False):
 	response = urllib2.urlopen(request)
 	text = response.read()
 	response.close()
-	return text
+	return urllib.unquote(text)
+def translate(dict):
+	try:
+		return dict[getWiki().langcode()]
+	except KeyError:
+		try:
+			return dict['en'] #default to english
+		except KeyError:
+			return dict[dict.keys()[0]] #last resort
 def urlencode(query,doseq=0):
 	"""
 	Hack of urllib's urlencode function, which can handle
@@ -961,13 +989,15 @@ def urlencode(query,doseq=0):
 						l.append(k + '=' + quote_plus(str(elt)))
 	return '&'.join(l)
 
-#print this when imported
-print 'Operating as %s on %s.' %(config.username, config.wiki)
 #set some defaults
 PutThrottle = 10
 NumEdits = 0
+DebugValue = False
+getArgs() #so it gets site.. throttles...
+#print this when imported
+print 'Operating as %s on %s.' %(getUser(), config.wiki) #why is it printing twice??
 #fix all of the cookiefile stuff
-COOKIEFILE = config.path + '/pywikibot/cookies/'+ getUser() +'.data'
+COOKIEFILE = config.path + '/pywikibot/cookies/'+ getUser() +'-'+ str(config.wiki).replace('.','_') + '.data'
 COOKIEFILE = COOKIEFILE.replace(' ','_')
 CJ = cookielib.LWPCookieJar()
 if os.path.isfile(COOKIEFILE):
