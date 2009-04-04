@@ -43,7 +43,7 @@ class MySQL:
 		except IndexError:
 			raise wiki.MySQLError('%s does not exist.' %db)
 
-trySQL = MySQL()
+SQL = MySQL()
 def editcount(user, db):
 	res = SQL.query("SELECT user_editcount FROM user WHERE user_name = '%s';" %(user), db)
 	try:

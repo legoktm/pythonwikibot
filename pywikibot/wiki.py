@@ -150,6 +150,10 @@ class API:
 			self.api = self.wiki.getAPI()
 		if gzip:
 			self.headers['Accept-Encoding'] = 'gzip'
+		try:
+			del url
+		except UnboundLocalError:
+			0 #nothing
 		self.opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(CJ))
 		urllib2.install_opener(self.opener)
 		self.request = urllib2.Request(self.api, self.encodeparams, self.headers)
@@ -682,9 +686,12 @@ class Page:
 			params['reason'] = summary
 		self.API.query(params, write = True) #TODO: implement error checking
 	def NumberofRevisions(self): #returns the number of revisions
-		params = 'action=query&prop=revisions&titles=API&rvlimit=max'
+		params = 'action=query&prop=revisions&titles=%s&rvlimit=max' %self.page
 		res = self.API.query(params)['query']['pages']
-		self.fullrevisions = res[res.keys()[0]]['revisions']
+		try:
+			self.fullrevisions = res[res.keys()[0]]['revisions']
+		except KeyError:
+			return 0
 		return len(self.fullrevisions)
 	def ArticleTraffic(self, force=False):
 		if self.traffic and not force:
@@ -752,7 +759,7 @@ def getWiki(url=False):
 		return Site(url)
 	return Site(config.wiki)
 def setWiki(url):
-	print 'Changing wiki to ' + url
+#	print 'Changing wiki to ' + url
 	config.wiki = url
 """
 Other functions
@@ -770,7 +777,6 @@ def checklogin():
 	}
 	querycheck = API().query(paramscheck)
 	name = querycheck['query']['userinfo']['name']
-	print name
 	if querycheck['query']['userinfo'].has_key('messages'):
 		print 'You have new messages on %s.' %(config.wiki)
 		if config.quitonmess:
@@ -863,7 +869,7 @@ def setUser(name):
 	"""
 	global UserName
 	UserName = name
-	print 'Switching username to %s on %s.' %(UserName, config.wiki)
+#	print 'Switching username to %s on %s.' %(UserName, config.wiki)
 	global COOKIEFILE #update it
 	COOKIEFILE = config.path + '/pywikibot/cookies/'+ getUser() +'.data'
 def getUser():
