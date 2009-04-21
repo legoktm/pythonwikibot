@@ -1,4 +1,4 @@
-	#!usr/bin/python
+#!usr/bin/python
 # -*- coding: utf-8 -*-
 """
 
@@ -90,7 +90,7 @@ class API:
 		global CJ
 		if loginu:
 			self.username = loginu
-			self.COOKIEFILE = config.path + '/pywikibot/cookies/'+ loginu +'-'+ str(wiki).replace('.','_') + '.data'
+			self.COOKIEFILE = __getPath() + '/pywikibot/cookies/'+ loginu +'-'+ str(wiki).replace('.','_') + '.data'
 			CJ = cookielib.LWPCookieJar() #reset
 		else:
 			global COOKIEFILE
@@ -397,7 +397,7 @@ class Page:
 		return Page(self.API.query({'action':'query','titles':self.page,'redirects':''})['query']['redirects'][0]['to'])
 	def __updatetime(self):
 		#check if we have waited 10 seconds since the last edit/move 
-		FILE = config.path + '/pywikibot/cookies/lastedit.data'
+		FILE = __getPath() + '/pywikibot/cookies/lastedit.data'
 		try:
 			textfile = open(FILE, 'r')
 			text = textfile.read()
@@ -871,7 +871,30 @@ def setUser(name):
 	UserName = name
 #	print 'Switching username to %s on %s.' %(UserName, config.wiki)
 	global COOKIEFILE #update it
-	COOKIEFILE = config.path + '/pywikibot/cookies/'+ getUser() +'.data'
+	COOKIEFILE = __getPath() + '/pywikibot/cookies/'+ getUser() +'.data'
+def __getPath():
+	global real_dir
+#	if real_dir == config.path:
+#		return config.path
+	dir = config.path
+	for arg in sys.argv:
+		if arg.startswith('-dir:'):
+			dir = arg[5:]
+			sys.argv.remove(arg)
+			break
+	else:
+		if os.environ.has_key('PYWIKIBOT'):
+			dir = os.environ['PYWIKIBOT']
+		else:
+			if os.path.exists('scripts/'):
+				dir = config.path
+			else:
+				try:
+					dir = os.path.split(os.path.abspath(sys.modules['config'].__file__))[0]
+				except KeyError:
+					pass
+	real_dir = dir
+	return dir
 def getUser():
 	"""
 	Returns the username that has been set by setUser()
@@ -1000,10 +1023,12 @@ PutThrottle = 10
 NumEdits = 0
 DebugValue = False
 getArgs() #so it gets site.. throttles...
+real_dir = config.path
+real_dir = __getPath()
 #print this when imported
 print 'Operating as %s on %s.' %(getUser(), config.wiki) #why is it printing twice??
 #fix all of the cookiefile stuff
-COOKIEFILE = config.path + '/pywikibot/cookies/'+ getUser() +'-'+ str(config.wiki).replace('.','_') + '.data'
+COOKIEFILE = __getPath() + '/pywikibot/cookies/'+ getUser() +'-'+ str(config.wiki).replace('.','_') + '.data'
 COOKIEFILE = COOKIEFILE.replace(' ','_')
 CJ = cookielib.LWPCookieJar()
 if os.path.isfile(COOKIEFILE):
