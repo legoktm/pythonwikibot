@@ -1,3 +1,3 @@
 #!usr/bin/python
 #-*- coding: utf-8 -*-
-__all__ = ['BeautifulSoup', 'catlib', 'config', 'mysql', 'pagegen', 'timedate', 'version', 'wiki']
+__all__ = [ 'catlib', 'config', 'mysql', 'pagegen', 'timedate', 'version', 'wiki']

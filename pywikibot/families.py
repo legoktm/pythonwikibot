@@ -39,7 +39,14 @@ commonscommons = {
 	'lang':'commons',
 	'fam':'commons',
 }
-
+lyricwiki = {
+	'baseurl':'http://lyricwiki.org',
+	'api':'mw_api.php',
+	'index':'',
+	'db':None,
+	'lang':'en',
+	'fam':'LyricWiki'
+}
 """
 Main wikilist used by PythonWikiBot
 URL is key, Wiki Dict above is given
@@ -49,4 +56,5 @@ wikilist = {
 	'fr.wikipedia.org': frwiki,
 	'de.wikipedia.org': dewiki,
 	'commons.wikimedia.org':commonscommons,
+	'lyricwiki.org':lyricwiki,
 }

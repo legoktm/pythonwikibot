@@ -7,12 +7,16 @@ class Category:
 	def __init__(self, page):
 		self.page = page
 		self.title = page.title()
-		self.id = page.id
+		self.id = page.id()
 		self.API = wiki.API(wiki=page.getSite())
 	def __str__(self):
 		return self.page.aslink()
 	def __repr__(self):
-		return 'Category{\'%s\'}' %self.page.title()		
+		return 'Category{\'%s\'}' %self.page.title()
+	def title(self):
+		return self.title
+	def aslink(self):
+		return self.aslink()
 	def catinfo(self):
 		params = {
 			'action':'query',
