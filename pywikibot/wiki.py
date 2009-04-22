@@ -90,7 +90,7 @@ class API:
 		global CJ
 		if loginu:
 			self.username = loginu
-			self.COOKIEFILE = __getPath() + '/pywikibot/cookies/'+ loginu +'-'+ str(wiki).replace('.','_') + '.data'
+			self.COOKIEFILE = getPath() + '/pywikibot/cookies/'+ loginu +'-'+ str(wiki).replace('.','_') + '.data'
 			CJ = cookielib.LWPCookieJar() #reset
 		else:
 			global COOKIEFILE
@@ -397,7 +397,7 @@ class Page:
 		return Page(self.API.query({'action':'query','titles':self.page,'redirects':''})['query']['redirects'][0]['to'])
 	def __updatetime(self):
 		#check if we have waited 10 seconds since the last edit/move 
-		FILE = __getPath() + '/pywikibot/cookies/lastedit.data'
+		FILE = getPath() + '/pywikibot/cookies/lastedit.data'
 		try:
 			textfile = open(FILE, 'r')
 			text = textfile.read()
@@ -871,8 +871,8 @@ def setUser(name):
 	UserName = name
 #	print 'Switching username to %s on %s.' %(UserName, config.wiki)
 	global COOKIEFILE #update it
-	COOKIEFILE = __getPath() + '/pywikibot/cookies/'+ getUser() +'.data'
-def __getPath():
+	COOKIEFILE = getPath() + '/pywikibot/cookies/'+ getUser() +'.data'
+def getPath():
 	global real_dir
 #	if real_dir == config.path:
 #		return config.path
@@ -1024,11 +1024,11 @@ NumEdits = 0
 DebugValue = False
 getArgs() #so it gets site.. throttles...
 real_dir = config.path
-real_dir = __getPath()
+real_dir = getPath()
 #print this when imported
 print 'Operating as %s on %s.' %(getUser(), config.wiki) #why is it printing twice??
 #fix all of the cookiefile stuff
-COOKIEFILE = __getPath() + '/pywikibot/cookies/'+ getUser() +'-'+ str(config.wiki).replace('.','_') + '.data'
+COOKIEFILE = getPath() + '/pywikibot/cookies/'+ getUser() +'-'+ str(config.wiki).replace('.','_') + '.data'
 COOKIEFILE = COOKIEFILE.replace(' ','_')
 CJ = cookielib.LWPCookieJar()
 if os.path.isfile(COOKIEFILE):
