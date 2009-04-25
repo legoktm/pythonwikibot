@@ -7,7 +7,7 @@ __version__ = '$Id$'
 Tags pages for RFD
 Usage: python rfd.py
 """
-import re, time
+import re
 
 from pywikibot import wiki
 o = wiki.Page('User:Arthur Rubin/Roman redirects')

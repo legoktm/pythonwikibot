@@ -3,7 +3,7 @@
 #
 # (C) Legoktm 2008-2009
 # 
-import re, time
+import re
 from pywikibot import wiki, pagegen
 
 def do_page(page, text):

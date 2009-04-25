@@ -41,7 +41,7 @@ commonscommons = {
 }
 lyricwiki = {
 	'baseurl':'http://lyricwiki.org',
-	'api':'mw_api.php',
+	'api':'/mw_api.php',
 	'index':'',
 	'db':None,
 	'lang':'en',

@@ -31,7 +31,9 @@ def getversiondict():
 			'user':id.split(' ')[3],
 		}
 		return dict
+def main():
+    print 'PythonWikiBot: ' + getversion()
+    print 'Python: ' + sys.version
 
 if __name__ == '__main__':
-	print 'PythonWikiBot: '+ getversion()
-	print 'Python: '+sys.version
+	main()

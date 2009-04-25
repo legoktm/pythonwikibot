@@ -9,6 +9,8 @@ Released under the MIT License
 See COPYING for full License
 
 """
+import sys
+
 __version__ = '$Id$'
 import urllib2, urllib, re, time, getpass, cookielib
 from urllib import quote_plus, _is_unicode
@@ -871,7 +873,7 @@ def setUser(name):
 	UserName = name
 #	print 'Switching username to %s on %s.' %(UserName, config.wiki)
 	global COOKIEFILE #update it
-	COOKIEFILE = getPath() + '/pywikibot/cookies/'+ getUser() +'.data'
+	COOKIEFILE = getPath() + '/pywikibot/cookies/'+ getUser() +'-'+ str(config.wiki).replace('.','_') + '.data'
 def getPath():
 	global real_dir
 #	if real_dir == config.path:
@@ -1020,7 +1022,7 @@ def urlencode(query,doseq=0):
 
 #set some defaults
 PutThrottle = 10
-NumEdits = 0
+NumEdits = 5
 DebugValue = False
 getArgs() #so it gets site.. throttles...
 real_dir = config.path
@@ -1035,7 +1037,8 @@ if os.path.isfile(COOKIEFILE):
 	CJ.load(COOKIEFILE)
 
 if __name__ == "__main__":
-	import version
-	print 'PythonWikiBot version 0.1'
-	print '(C) 2008-2009 PythonWikiBot team MIT License'
-	login(prompt=True)
+    import verion
+    version.main()
+    print 'PythonWikiBot release 0.1'
+    print '(C) 2008-2009 PythonWikiBot team MIT License'
+    login(prompt=True)

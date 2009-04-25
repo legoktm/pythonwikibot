@@ -1,5 +1,5 @@
 #!usr/bin/python
-import os, sys, re, time
+import re
 from pywikibot import wiki, pagegen
 wiki.setUser('Legobot')
 __version__ = '$Id$'
