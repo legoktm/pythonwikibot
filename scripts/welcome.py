@@ -5,15 +5,19 @@ reload(sys)
 sys.setdefaultencoding('utf-8')
 
 logs = {
+	'en':None,
 	'commons': 'Project:Welcome log',
 }
 templates = {
-	'commons': '{{subst:welcome}}',
+	'en':'{{subst:welcome}} ~~~~',
+	'commons': '{{subst:welcome}} ~~~~',
 }
 logupmess = {
+	'en':None,
 	'commons': 'Bot: Updating log',
 }
 welcomemess = {
+	'en':'Welcome!',
 	'commons': 'Welcome!',
 }
 class WelcomeBot:
@@ -23,8 +27,8 @@ class WelcomeBot:
 			#-------------SETTINGS START HERE-------------#
 			#---------------------------------------------#
 			self.editcount = 0						#Must have at least this many edits
-			self.loadusers = 500					#How many users to load
-			self.waittime = 500						#How many seconds to wait after each run
+			self.loadusers = 5000					#How many users to load
+			self.waittime = 30						#How many seconds to wait after each run
 			self.quitafterrun = False				#Whether to quit after running
 			#---------------------------------------------#
 			#--------------SETTINGS END HERE--------------#
@@ -47,6 +51,8 @@ class WelcomeBot:
 				time.sleep(2)
 			self.updatelog(logpost)
 			if not self.quitafterrun:
+				print 'Sleeping %s' %self.waittime
+				time.sleep(self.waittime)
 				bot = WelcomeBot()
 				bot.run()
 			else:
@@ -78,7 +84,9 @@ class WelcomeBot:
 				month = u'0' + month
 			try:
 				self.log = logs[wiki.translate()]
-			except KeyError: #no long on wiki
+			except KeyError: #no log on wiki
+				return
+			if not self.log:
 				return
 			target = self.log + '/' + year + '/' + month + '/' + day
 			log = wiki.Page(target)

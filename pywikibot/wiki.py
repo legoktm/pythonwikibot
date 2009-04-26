@@ -838,6 +838,8 @@ def getArgs(args=False):
 			setThrottle(int(arg[4:]))
 		elif arg.startswith('-site:'):
 			setWiki(arg[6:])
+		elif arg.startswith('-wiki:'):
+			setWiki(arg[6:])
 		elif arg == '-debug':
 			setDebug(True)
 			print config.wiki
