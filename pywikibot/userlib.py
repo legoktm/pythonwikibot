@@ -14,7 +14,10 @@ class User:
 		if not self.username:
 			self.username = self.page.titlewonamespace()
 		params = 'action=query&list=users&ususers=%s&usprop=editcount' %self.username
-		return self.API.query(params)['query']['users'][0]['editcount']
+		try:
+			return self.API.query(params)['query']['users'][0]['editcount']
+		except KeyError:
+			return 0
 	def isBlocked(self):
 		if not self.username:
 			self.username = self.page.titlewonamespace()	
