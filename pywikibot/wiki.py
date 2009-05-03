@@ -9,7 +9,6 @@ Released under the MIT License
 See COPYING for full License
 
 """
-import sys
 
 __version__ = '$Id$'
 import urllib2, urllib, re, time, getpass, cookielib
@@ -459,6 +458,7 @@ class Page:
 			'summary':summary,
 			'token':self.edittoken,
 			'starttimestamp':self.starttimestamp,
+			'assert':'user',
 		}
 		if md5:
 			params['md5'] = md5
@@ -904,6 +904,7 @@ def getUser():
 	Returns the username that has been set by setUser()
 	or in the userconfig.py
 	"""
+	global UserName
 	try:
 		return UserName
 	except:
