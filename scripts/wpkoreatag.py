@@ -1,6 +1,7 @@
 #!usr/bin/python
 import re
-from pywikibot import wiki, pagegen
+import wiki
+from wiki import pagegen
 wiki.setUser('Legobot')
 __version__ = '$Id$'
 def main():

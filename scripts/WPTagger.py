@@ -7,7 +7,8 @@
 Tags talk pages for a wikiproject
 Syntax Example: python WPTagger.py "{{WikiProject Piracy}}" "[[WP:WikiProject Piracy]]" -cat:Category:Piracy
 """
-from pywikibot import wiki, pagegen
+import wiki
+from wiki import pagegen
 wiki.setUser('Legobot')
 import time, re
 def doProject(tag, projname, gen):

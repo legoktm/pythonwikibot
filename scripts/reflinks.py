@@ -10,7 +10,8 @@ Usage: python reflinks.py
 #
 __version__ = '$Id$'
 
-from pywikibot import wiki, pagegen
+import wiki
+from wiki import pagegen
 import re, time
 def dopage(page):
 	wikitext = state = page.get()

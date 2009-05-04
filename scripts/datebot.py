@@ -11,7 +11,8 @@ Syntax: python datebot.py
 __version__ = '$Id$'
 import re, sys, time
 import os
-from pywikibot import wiki, pagegen, config
+import wiki
+from wiki import pagegen, config
 
 # Define global constants
 readDelay  = 20	# seconds

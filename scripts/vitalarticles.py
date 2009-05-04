@@ -4,8 +4,8 @@
 # (C) Legoktm 2008-2009
 # 
 import re
-from pywikibot import wiki, pagegen
-
+import wiki
+from wiki import pagegen
 def do_page(page, text):
 	try:
 		print unicode(page)

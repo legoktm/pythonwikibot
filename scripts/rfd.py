@@ -9,7 +9,7 @@ Usage: python rfd.py
 """
 import re
 
-from pywikibot import wiki
+import wiki
 o = wiki.Page('User:Arthur Rubin/Roman redirects')
 list = re.findall('\[\[:M(.*?)\]\]', o.get())
 newlist = []

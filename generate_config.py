@@ -1,7 +1,7 @@
 #!usr/bin/python
 __version__ = '$Id$'
 import os, sys
-CONFIG = os.environ['PWD'] + '/pywikibot/userconfig.py'
+CONFIG = os.environ['PWD'] + '/wiki/userconfig.py'
 #if os.path.isfile(CONFIG):
 #	sys.exit('Your user-config.py already exists.')
 def main():
@@ -49,7 +49,7 @@ def main():
 def checklogin():
 	resp = raw_input('Would you now like to login? ([y]es or [n]o)')
 	if resp == ('y' or 'yes'):
-		from pywikibot import wiki
+		import wiki
 		wiki.login()
 	else:
 		sys.exit()

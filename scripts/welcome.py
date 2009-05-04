@@ -1,5 +1,6 @@
 #!usr/bin/python
-from pywikibot import wiki, userlib
+import wiki
+from wiki import userlib
 import re, time, sys
 reload(sys)
 sys.setdefaultencoding('utf-8')
