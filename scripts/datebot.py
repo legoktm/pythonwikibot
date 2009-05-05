@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 # -*- coding: utf-8  -*-
 """
 This script is a clone of [[en:User:SmackBot]]
@@ -71,10 +71,10 @@ def process_article(page):
 			page.put(wikitext, EditMsg)
 		except wiki.LockedPage:
 			print 'SKIP: ' + page.title() + ' is locked.'
-#			except KeyboardInterrupt:
-#				quit()
-#			except:
-#				print 'ERROR:	Except raised while writing.'
+#		except KeyboardInterrupt:
+#			quit()
+#		except:
+#			print 'ERROR:	Except raised while writing.'
 	else:
 		print 'Skipping ' + page.title() + ' due to no changes made after state point.'
 def docat(cat2):
