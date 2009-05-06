@@ -6,6 +6,7 @@
 import re
 import wiki
 from wiki import pagegen
+wiki.setUser('Legobot')
 def do_page(page, text):
 	try:
 		print unicode(page)
