@@ -5,8 +5,8 @@
 # 
 import re
 import wiki
-from wiki import pagegen
 wiki.setUser('Legobot')
+from wiki import pagegen
 def do_page(page, text):
 	try:
 		print unicode(page)
@@ -14,50 +14,42 @@ def do_page(page, text):
 			pagetext = page.get()
 		except wiki.IsRedirectPage, e: #wtf...
 			return text
-		talktext = page.toggletalk().get()
+		talkpage = page.toggletalk()
+		talktext = talkpage.get()
 		#get all of the classes and actions
-		if re.search('class=FA',talktext,re.I):
-			if not re.search('class=fail',talktext,re.I):
-				pgclass = ['FA', 'FA']
-		if re.search('class=A',talktext,re.I):
-			pgclass = ['A', 'A-icon']
-		elif re.search('class=GA',talktext,re.I):
-			pgclass = ['GA', 'GAicon']
-		elif re.search('class=B',talktext,re.I):
-			pgclass = ['B', 'B-icon']
-		elif re.search('class=C',talktext,re.I):
-			pgclass = ['C', 'C-icon']
-		elif re.search('class=stub',talktext,re.I):
-			pgclass = ['Stub', 'Stub-icon']
-		elif re.search('class=start',talktext,re.I):
-			pgclass = ['Start', 'Start-icon']
-		else:
-			print "No class assigned to %s." %str(page)
+		pgclass = ['','']
+		try:
+			pgclass[0] = wiki.parseTemplate(talktext)['class']
+			if pgclass[0].lower() == 'fa':
+				pgclass = ['FA','FA']
+			elif pgclass[0].lower() == 'ga':
+				pgclass = ['GA','GAicon']
+			else:
+				pgclass = [pgclass[0], pgclass[0]+'-icon']
+		except KeyError:
+			print "No class assigned to %s." %str(page) #it cant find 'class='
 			return text
+		classes = ['fa','ga','a','b','c','stub','start']
+		if not (pgclass[0].lower() in classes):
+			pgclass = oldclassdetection(talktext)
+			if not pgclass:
+				return text
 		print str(page) + " has a class of " + str(pgclass[0])
 		#Check for FGANs, FFAs, and FFACs
-		ffac=re.findall('action(.*?)=FAC', pagetext)
-		ffar=re.findall('action(.*?)=FAR', pagetext)
-		pgclassother = False
-		for i in ffac:
-			if re.search('action%sresult=not promoted' %(i),text,re.I):
-				pgclassother = ['FFAC', '{{FAC-icon}}']
-		if re.search('currentstatus=FGAN',text,re.I):
+		talkcats = talkpage.categories(raw=True)
+		if 'Category:Wikipedia featured article candidates (contested)' in talkcats:
+			pgclassother = ['FFAC', '{{FAC-icon}}']
+		elif 'Category:Former good article nominees' in talkcats:
 			pgclassother = ['FGAN','{{NoGA-icon}}']
-		if re.search('currentstatus=FFA',text,re.I):
+		elif 'Category:Wikipedia former featured articles' in talkcats:
 			pgclassother = ['FFA', '{{NoFA}}']
-		for i in ffar:
-			if re.search('action%sresult=demoted' %(i),text,re.I):
-				pgclassother = ['FFAC', '{{FAC-icon}}']
-		if not pgclassother:
+		else:
 			pgclassother = ['','']
-
 		pgtemp = pgclass[1]
 		pgaltclass = pgclassother[1]
 		#substitute it in.
 		find = u'\{\{%s\}\} \[\[%s\]\]' %(pgtemp, page.title())
 		shouldfind = u'{{%s}} [[%s]]' %(pgtemp, page.title())
-		print find
 #		print wikitext
 		m=re.findall(find, text)
 		try:
@@ -70,7 +62,7 @@ def do_page(page, text):
 		"""Following checks if the article is bolded"""
 		boldcheck=re.findall("'''\[\[%s\]\]'''" %(page.title(regex=True)), text)
 		try:
-			print boldcheck[0]
+			boldcheck[0]
 			bold=True
 		except IndexError:
 			print 'Not found'
@@ -78,7 +70,6 @@ def do_page(page, text):
 		"""Done checking for bolding"""
 		"""Check for howmany # signs, only checks for 3"""
 		numcheck1=re.findall('\n(.*?) (.*?)\[\[%s\]\]' %(page.title(regex=True)), text)
-		print numcheck1
 		try:
 			numcheck=numcheck1[0][0]
 		except IndexError:
@@ -98,6 +89,28 @@ def do_page(page, text):
 		return text
 	except UnicodeDecodeError:
 		return text
+def oldclassdetection(talktext):
+	pgclass = None
+	if re.search('class=FA',talktext,re.I):
+		if not re.search('class=fail',talktext,re.I):
+			pgclass = ['FA', 'FA']
+	if re.search('class=A',talktext,re.I):
+		pgclass = ['A', 'A-icon']
+	elif re.search('class=GA',talktext,re.I):
+		pgclass = ['GA', 'GAicon']
+	elif re.search('class=B',talktext,re.I):
+		pgclass = ['B', 'B-icon']
+	elif re.search('class=C',talktext,re.I):
+		pgclass = ['C', 'C-icon']
+	elif re.search('class=stub',talktext,re.I):
+		pgclass = ['Stub', 'Stub-icon']
+	elif re.search('class=start',talktext,re.I):
+		pgclass = ['Start', 'Start-icon']
+	if not pgclass:
+		print 'Can\'t find class????'
+		return
+	return pgclass
+
 def get_pages():
 	vapage = wiki.Page('Wikipedia:Vital articles')
 	gen = pagegen.links(vapage, ns=0) #we only need mainspace articles
@@ -107,7 +120,6 @@ def get_pages():
 		if page.namespace() == 0:
 			text = do_page(page, text)
 	wiki.showDiff(state0, text)
-	vapage.put(text, 'Bot: Updating Vital Articles')
+	vapage.put(text, 'Bot: Updating Vital Articles', bot=True)
 if __name__ == '__main__':
-	wiki.setUser('Legobot')
 	get_pages()

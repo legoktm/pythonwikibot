@@ -61,7 +61,7 @@ def dopage(page): #old way, fixing now
     if wikitext != state0:
 		try:
 			wiki.showDiff(state0,wikitext)
-			page.put(wikitext, 'Bot: Maintaining protection tags ([[Wikipedia:Bots/Requests_for_approval/Legobot_III|BRFA]])')
+			page.put(wikitext, 'Bot: Maintaining protection tags', bot=True)
 			return True
 		except wiki.LockedPage:
 			print 'Skipping %s due to full protection' %page.title()

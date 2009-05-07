@@ -261,6 +261,9 @@ class Page:
 			self.page = unicode('Template:' + re.findall('\{\{(.*?)\}\}', page)[0].split('|')[0])		
 		else:
 			self.page = unicode(page)
+		#remove _ and %20...
+		self.page = urllib.unquote(self.page.replace('_',' '))
+		
 		self.stid = id
 		self.wiki = wiki
 		self.content = False
@@ -288,11 +291,12 @@ class Page:
 			return
 		params = {
 			'action':'query',
-			'prop':'info|revisions|langlinks|categoryinfo',
+			'prop':'info|revisions|langlinks|categoryinfo|categories',
 			'inprop':'protection|talkid|subjectid',
 			'intoken':'edit|move|delete|protect', #even if not admin, just get them...
 			'rvprop':'user|comment|content|timestamp',
 			'lllimit':'max',
+			'cllimit':'max',
 		}
 		if self.stid:
 			params['pageids'] = self.stid
@@ -429,7 +433,7 @@ class Page:
 				NumEdits = 0
 			else:
 				NumEdits += 1
-	def put(self, newtext, summary=False, watch = False, newsection = False):
+	def put(self, newtext, summary=False, watch = False, newsection = False, bot = False):
 		"""
 		Edits the wikipage.
 		newtext = what to replace the text with (REQUIRED)
@@ -446,6 +450,8 @@ class Page:
 		try:
 			md5 = hashlib.md5(newtext).hexdigest() #for safety
 		except:
+			print 'WARNING: md5 hashing failed.  Data may be corrupted.'
+			time.sleep(5)
 			md5 = False
 		if not self.edittoken:
 			self.__basicinfo()
@@ -467,6 +473,8 @@ class Page:
 			params['watch'] = ''
 		if newsection:
 			params['section'] = 'new'
+		if bot:
+			params['bot'] = ''
 		self.__updatetime()
 		res=self.API.query(params, write = True)
 		if res.has_key('error'):
@@ -621,12 +629,16 @@ class Page:
 		return retdict
 	def getSite(self):
 		return self.wiki
-	def categories(self):
-		params = {'action':'query','titles':self.page,'prop':'categories'}
-		res = self.API.query(params)['query']['pages']
+	def categories(self, raw=False):
+		if not self._basicinfo:
+			self.__basicinfo()
+		res = self._basicinfo
 		list = []
-		for item in res[res.keys()[0]]['categories']:
-			list.append(Page(item['title'], wiki=self.wiki))
+		for item in res['categories']:
+			if raw:
+				list.append(item['title'])
+			else:
+				list.append(Page(item['title'], wiki=self.wiki))
 		return list
 	def templates(self):
 		params = {'action':'query','titles':self.page,'prop':'templates','tllimit':'max'}
