@@ -286,6 +286,14 @@ class Page:
 		return self.aslink()
 	def __repr__(self):
 		return 'Page{\'%s\'}' %self.page
+	def __cmp__(self, other):
+		if not isinstance(other, Page):
+			return 1 #not a Page() object
+		if self.title() != other.title():
+			return 1 #different page
+		if self.getSite() != other.getSite():
+			return 1 #on a different wiki
+		return 0 #should be the same page
 	def __basicinfo(self):
 		if self._basicinfo:
 			return
@@ -771,6 +779,12 @@ class Site:
 		return self.shorturl
 	def __repr__(self):
 		return self.shorturl
+	def __cmp__(self, other):
+		if not isinstance(other, Site):
+			return 1
+		if self.baseurl() != other.baseurl():
+			return 1
+		return 0
 	def langcode(self):
 		return self.wiki['code']
 	def baseurl(self):
