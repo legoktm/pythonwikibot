@@ -485,6 +485,13 @@ class Page:
 			raise APIError(res['error'])
 		if res['edit']['result'] == 'Success':
 			print 'Changing [[%s]] was successful.' %self.page
+		elif res['edit']['result'] == 'Failure':
+			try:
+				res['edit']['assert']
+				raise LoginError('Re-Login (Cookies may have expired)')
+			except:
+				print 'Changing [[%s]] failed.' %self.page
+				raise APIError(res)				
 		else:
 			print 'Changing [[%s]] failed.' %self.page
 			raise APIError(res)
@@ -766,7 +773,8 @@ class Site:
 		return self.shorturl
 	def langcode(self):
 		return self.wiki['code']
-
+	def baseurl(self):
+		return self.wiki['baseurl']
 
 def getWiki(url=False):
 	if url:
@@ -954,10 +962,23 @@ def parseTemplate(str):
 				ret[i[0]] = i[1]
 	return ret
 
-def getURL(url, headers=False):
+def getURL(url, params=False, headers=False):
 	if not headers:
 		headers = {'User-agent':getUser()}
+	if params:
+		url += '?' + urlencode(params)
 	request = urllib2.Request(url, headers=headers)
+	response = urllib2.urlopen(request)
+	text = response.read()
+	response.close()
+	return urllib.unquote(text)
+def postURL(url, params, headers=False):
+	if not headers:
+		headers = {'User-agent':getUser()}
+	if params:
+		request = urllib2.Request(url, headers=headers, data=urlencode(params))
+	else:
+		request = urllib2.Request(url, headers=headers)
 	response = urllib2.urlopen(request)
 	text = response.read()
 	response.close()
