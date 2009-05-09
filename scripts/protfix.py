@@ -11,6 +11,7 @@ for page in gen:
 		name = page.titlewonamespace()
 		fulllist.append(name)
 
+moveprot = ['pp-move-dispute','pp-move-vandalism','pp-move-indef','pp-move']
 def logerror(page):
 	try:
 		orig = open('Errors.txt', 'r')
@@ -39,7 +40,7 @@ def dopage(page): #old way, fixing now
 		for template in fulllist:
 			wikitext = removetemplate(wikitext, template)
     if protlevel.has_key('edit') and protlevel.has_key('move'):
-		if protlevel['move']['expiry'] == 'infinity':
+		if (protlevel['move']['expiry'] == 'infinity') and (protlevel['move']['level'] == 'autoconfirmed'):
 			for template in moveprot:
 				wikitext = removetemplate(wikitext, template)
     if protlevel.has_key('move'):
