@@ -95,19 +95,7 @@ def links(page, ns=None):
 	Not Special:WhatLinksHere
 	ns is an (optional) int() which is the only namespace returned
 	"""
-	API = wiki.API(wiki=page.getSite())
-	params = {
-		'action':'query',
-		'titles':page.title(),
-		'prop':'links',
-		'pllimit':'max'
-	}
-	if ns:
-		params['plnamespace'] = int(ns)
-	res = API.query(params)['query']['pages']
-	list = res[res.keys()[0]]['links']
-	for page in list:
-		yield wiki.Page(page['title'])
+	return page.links(ns=ns)
 
 def whatlinkshere(page):
 	"""

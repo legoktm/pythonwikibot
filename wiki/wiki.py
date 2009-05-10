@@ -107,6 +107,7 @@ class API:
 		else:
 			self.wiki = wiki
 			self.api = False
+		del url
 		self.login = login
 		global DebugValue
 		self.debug = DebugValue
@@ -151,14 +152,14 @@ class API:
 			self.api = self.wiki.getAPI()
 		if gzip:
 			self.headers['Accept-Encoding'] = 'gzip'
-		try:
-			del url
-		except UnboundLocalError:
-			0 #nothing
 		self.opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(CJ))
 		urllib2.install_opener(self.opener)
 		self.request = urllib2.Request(self.api, self.encodeparams, self.headers)
 #		print 'Querying API'
+		try:
+			del url
+		except UnboundLocalError:
+			0 #nothing
 		try:
 			self.response = urllib2.urlopen(self.request)
 		except urllib2.URLError, e:
@@ -649,12 +650,15 @@ class Page:
 			self.__basicinfo()
 		res = self._basicinfo
 		list = []
-		for item in res['categories']:
-			if raw:
-				list.append(item['title'])
-			else:
-				list.append(Page(item['title'], wiki=self.wiki))
-		return list
+		try:
+			for item in res['categories']:
+				if raw:
+					list.append(item['title'])
+				else:
+					list.append(Page(item['title'], wiki=self.wiki))
+			return list
+		except KeyError:
+			return []
 	def templates(self):
 		params = {'action':'query','titles':self.page,'prop':'templates','tllimit':'max'}
 		res = self.API.query(params)['query']['pages']
@@ -728,15 +732,32 @@ class Page:
 		year = str(time.gmtime().tm_year)
 		month = timedate.numwithzero(time.gmtime().tm_mon)
 		url = 'http://stats.grok.se/en/%s%s/%s' %(year, month, self.page)
-		open = urllib.urlopen(url)
-		text = open.read()
-		open.close() # :P
+		text = getURL(url)
 		self.traffic = int(re.findall('viewed (.*?) times',text)[0])
 		return self.traffic
 	def id(self):
 		if not self.id:
 			self.__basicinfo()
 		return self.id
+	def links(self, ns=None):
+		"""
+		Returns links on a provided page
+		Not Special:WhatLinksHere
+		ns is an (optional) int() which is the only namespace returned
+		"""
+		params = {
+			'action':'query',
+			'titles':self.title(),
+			'prop':'links',
+			'pllimit':'max'
+		}
+		if ns:
+			params['plnamespace'] = int(ns)
+		res = self.API.query(params)['query']['pages']
+		list = res[res.keys()[0]]['links']
+		for page in list:
+			yield Page(page['title'])
+
 class Site:
 	"""
 	A wiki site
@@ -752,6 +773,7 @@ class Site:
 		self.API = False
 		self.nslist1 = False
 		self.nsretdict = False
+		del url
 	def __basicinfo(self):
 		params = 'action=query&meta=siteinfo&siprop=namespaces|namespacealiases|general'
 		if not self.API:
@@ -816,7 +838,7 @@ def checklogin():
 	if querycheck['query']['userinfo'].has_key('messages'):
 		print 'You have new messages on %s.' %(config.wiki)
 		if config.quitonmess:
-			sys.exit()
+			sys.exit(1)
 	if querycheck['query']['userinfo'].has_key('anon'):
 		return False
 	return name
