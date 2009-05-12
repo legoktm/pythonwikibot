@@ -33,36 +33,36 @@ def convertexpiry(ts):
 	return '%s %s, %s' %(monthname, day, year)		
 		
 def dopage(page): #old way, fixing now
-    wikitext = state0 = page.get()
-    protlevel = page.protectlevel()
-    print protlevel
-    if len(protlevel.keys()) == 0:
+	wikitext = state0 = page.get()
+	protlevel = page.protectlevel()
+	print protlevel
+	if len(protlevel.keys()) == 0:
 		for template in fulllist:
 			wikitext = removetemplate(wikitext, template)
 	if protlevel.has_key('edit'):
 		if protlevel['edit']['level'] == 'sysop':
 			return 'Prot'
-    if protlevel.has_key('edit') and protlevel.has_key('move'):
+	if protlevel.has_key('edit') and protlevel.has_key('move'):
 		if (protlevel['move']['expiry'] == 'infinity') and (protlevel['move']['level'] == 'autoconfirmed'):
 			for template in moveprot:
 				wikitext = removetemplate(wikitext, template)
-    if protlevel.has_key('move'):
+	if protlevel.has_key('move'):
 		move = protlevel['move']
 		if (move['level'] == 'sysop') and (move['expiry'] == 'infinity'):
 			if not ('{{pp-move' in wikitext.lower()):
 				wikitext = '{{pp-move-indef}}\n' + wikitext
-    if ('{{pp-semi' in wikitext.lower()) and (protlevel.has_key('edit') == False):
-        wikitext = removetemplate(wikitext, 'pp-semi-protected')
-        wikitext = removetemplate(wikitext, 'pp-semi-vandalism')
-        wikitext = removetemplate(wikitext, 'pp-semi')
-        wikitext = removetemplate(wikitext, 'pp-semi-indef')
-    if ('{{pp-dispute' in wikitext.lower()):
-        if protlevel.has_key('edit'):
-            if protlevel['edit']['level'] != 'sysop':
-                wikitext = removetemplate(wikitext, 'pp-dispute')
-        else:
-            wikitext = removetemplate(wikitext, 'pp-dispute')
-    if wikitext != state0:
+	if ('{{pp-semi' in wikitext.lower()) and (protlevel.has_key('edit') == False):
+		wikitext = removetemplate(wikitext, 'pp-semi-protected')
+		wikitext = removetemplate(wikitext, 'pp-semi-vandalism')
+		wikitext = removetemplate(wikitext, 'pp-semi')
+		wikitext = removetemplate(wikitext, 'pp-semi-indef')
+	if ('{{pp-dispute' in wikitext.lower()):
+		if protlevel.has_key('edit'):
+			if protlevel['edit']['level'] != 'sysop':
+				wikitext = removetemplate(wikitext, 'pp-dispute')
+		else:
+			wikitext = removetemplate(wikitext, 'pp-dispute')
+	if wikitext != state0:
 		try:
 			wiki.showDiff(state0,wikitext)
 			page.put(wikitext, 'Bot: Maintaining protection tags', bot=True)
@@ -70,9 +70,9 @@ def dopage(page): #old way, fixing now
 		except wiki.LockedPage:
 			print 'Skipping %s due to full protection' %page.title()
 			return 'Prot'
-    else:
-        print 'Not making any changes???'
-        return False
+	else:
+		print 'Not making any changes???'
+		return False
 
 def removetemplate(wikitext, template):
 	wikitext = re.compile(r'\{\{\s*%s((.*?)|)\}\}' %template, re.IGNORECASE).sub(r'', wikitext)
