@@ -39,6 +39,9 @@ def dopage(page): #old way, fixing now
     if len(protlevel.keys()) == 0:
 		for template in fulllist:
 			wikitext = removetemplate(wikitext, template)
+	if protlevel.has_key('edit'):
+		if protlevel['edit']['level'] == 'sysop':
+			return 'Prot'
     if protlevel.has_key('edit') and protlevel.has_key('move'):
 		if (protlevel['move']['expiry'] == 'infinity') and (protlevel['move']['level'] == 'autoconfirmed'):
 			for template in moveprot:
@@ -88,7 +91,7 @@ def main():
 	for page in gen:
 		checktalk()
 		print page.title() +' is being processed.'
-		if page.namespace() == (2 or 3 or 10):
+		if page.namespace() in [2, 3, 10]:
 			print 'Skipping userspace/template pages.'
 		else:
 			y=dopage(page)

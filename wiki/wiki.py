@@ -15,7 +15,7 @@ import urllib2, urllib, re, time, getpass, cookielib
 from urllib import quote_plus, _is_unicode
 from datetime import datetime
 import config, timedate, families
-import sys, os, difflib, hashlib
+import sys, os, difflib, hashlib, cgi
 import BeautifulSoup as BS
 try:
 	import gzip, StringIO
@@ -125,11 +125,13 @@ class API:
 			self.params['format'] = self.format
 			self.pformat = 'dict'
 		elif type(self.params) == type(''):
-			self.params += '&format=' + self.format
-			self.pformat = 'str'
+			self.params = dict(cgi.parse_qsl(self.params))
+			self.params['format'] = self.format			
+			self.pformat = 'dict'
 		elif type(self.params) == type(u''):
-			self.params += '&format=' + self.format
-			self.pformat = 'str'
+			self.params = dict(cgi.parse_qsl(self.params))
+			self.params['format'] = self.format
+			self.pformat = 'dict'
 		else:
 			raise APIError('Invalid Parameter format')
 		if self.write:
