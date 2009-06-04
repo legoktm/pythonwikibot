@@ -18,10 +18,7 @@ from wiki import pagegen, config, timedate
 readDelay  = 20	# seconds
 writeDelay = 60 # seconds
 usernames = {
-	"""
-	Needed so we know which stop page to check
-	"""
-	'en.wikipedia.org':'Legobot II'
+	'en.wikipedia.org':'Legobot II',
 }
 wiki.setUser(usernames[config.wiki])
 def checktalk():
