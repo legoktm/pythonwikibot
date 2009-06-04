@@ -25,7 +25,7 @@ def do_page(page, text):
 			elif pgclass[0].lower() == 'ga':
 				pgclass = ['GA','GAicon']
 			else:
-				pgclass = [pgclass[0], pgclass[0]+'-icon']
+				pgclass = [pgclass[0].title(), pgclass[0].title()+'-icon']
 		except KeyError:
 			print "No class assigned to %s." %str(page) #it cant find 'class='
 			return text

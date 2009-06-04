@@ -12,12 +12,15 @@ __version__ = '$Id$'
 import re, sys, time
 import os
 import wiki
-from wiki import pagegen, config
+from wiki import pagegen, config, timedate
 
 # Define global constants
 readDelay  = 20	# seconds
 writeDelay = 60 # seconds
 usernames = {
+	"""
+	Needed so we know which stop page to check
+	"""
 	'en.wikipedia.org':'Legobot II'
 }
 wiki.setUser(usernames[config.wiki])
@@ -30,6 +33,8 @@ def checktalk():
 	if wikitext.lower() != 'run':
 		sys.exit()
 def process_article(page):
+	month_name = timedate.monthname(timedate.currentmonth())
+	year = timedate.currentyear()
 	try:
 		wikitext = state1 = page.get()
 	except wiki.IsRedirectPage:
@@ -59,7 +64,8 @@ def process_article(page):
 	wikitext = re.compile(r'\{\{\s*copyedit\}\}', re.IGNORECASE).sub(r'{{Copyedit|date={{subst:CURRENTMONTHNAME}} {{subst:CURRENTYEAR}}}}', wikitext)
 	wikitext = re.compile(r'\{\{\s*refimprove\}\}', re.IGNORECASE).sub(r'{{Refimprove|date={{subst:CURRENTMONTHNAME}} {{subst:CURRENTYEAR}}}}', wikitext)
 	wikitext = re.compile(r'\{\{\s*primary sources\}\}', re.IGNORECASE).sub(r'{{Primary sources|date={{subst:CURRENTMONTHNAME}} {{subst:CURRENTYEAR}}}}', wikitext)
-
+	wikitext = wikitext.replace('{{subst:CURRENTMONTHNAME}}', month_name)
+	wikitext = wikitext.replace('{{subst:CURRENTYEAR}}', year)
 	EditMsg = "Date maintenance tags"
 	if state1 != state0:
 		EditMsg = EditMsg + " and general fixes"

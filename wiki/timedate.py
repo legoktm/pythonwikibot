@@ -77,6 +77,14 @@ def currtime():
 	Returns a time.time() object
 	"""
 	return time.time()
+def currentmonth():
+	"""
+	Returns the integer of the current month.
+	To get the current month name, use monthname(currentmonth())
+	"""
+	return time.gmtime(currtime()).tm_mon
+def currentyear():
+	return time.gmtime(currtime()).tm_year
 def numwithzero(num):
 	"""
 	Returns a str where their is a

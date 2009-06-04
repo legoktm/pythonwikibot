@@ -479,7 +479,7 @@ class Page:
 		}
 		if md5:
 			params['md5'] = md5
-		print 'Going to change [[%s]]' %(self.page)
+		print 'Going to change [[%s]]' %(self.page.decode('utf-8').encode('utf-8'))
 		if watch:
 			params['watch'] = ''
 		if newsection:
@@ -495,16 +495,16 @@ class Page:
 				raise LockedPage(res['error']['code'])				
 			raise APIError(res['error'])
 		if res['edit']['result'] == 'Success':
-			print 'Changing [[%s]] was successful.' %self.page
+			print 'Changing [[%s]] was successful.' %self.page.decode('utf-8').encode('utf-8')
 		elif res['edit']['result'] == 'Failure':
 			try:
 				res['edit']['assert']
 				raise LoginError('Re-Login (Cookies may have expired)')
 			except:
-				print 'Changing [[%s]] failed.' %self.page
+				print 'Changing [[%s]] failed.' %self.page.decode('utf-8').encode('utf-8')
 				raise APIError(res)				
 		else:
-			print 'Changing [[%s]] failed.' %self.page
+			print 'Changing [[%s]] failed.' %self.page.decode('utf-8').encode('utf-8')
 			raise APIError(res)
 		
 	def titlewonamespace(self):
@@ -607,7 +607,7 @@ class Page:
 			'action':'move',
 			'from':self.page,
 			'to':self.newtitle,
-			'reason':summary,
+			'reason':reason,
 			'token':self.movetoken,
 			'movetalk':'',
 		}
@@ -622,7 +622,9 @@ class Page:
 			try:
 				print 'Page move of %s to %s succeeded' %(self.page, self.newtitle.encode('utf-8'))
 			except UnicodeDecodeError:
-				print 'Page move of %s succeeded' %(self.page)
+				print 'Page move of %s succeeded' %(self.page.decode('utf-8').encode('utf-8'))
+			except UnicodeEncodeError:
+				print 'Page move of %s succeeded' %(self.page.decode('utf-8').encode('utf-8'))
 		return res
 		
 	def protectlevel(self):
@@ -784,6 +786,9 @@ class Site:
 		self.nslist1 = self.basicinfo['namespaces']
 		self.__handlenslist()
 	def __handlenslist(self):
+		if self.wiki.has_key('namespaces'):
+			self.nsretdict = self.wiki['namespaces']
+			return
 		if not self.nslist1:
 			self.__basicinfo()
 		if self.nsretdict:
@@ -976,9 +981,9 @@ def showDiff(oldtext, newtext):
 	"""
 	for line in difflib.ndiff(oldtext.splitlines(), newtext.splitlines()):
 		if '-' == line[0]:
-			print line
+			print line.decode('utf-8').encode('utf-8')
 		elif '+' == line[0]:
-			print line
+			print line.decode('utf-8').encode('utf-8')
 
 def parseTemplate(str):
 	"""
