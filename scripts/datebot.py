@@ -31,7 +31,7 @@ def checktalk():
 		sys.exit()
 def process_article(page):
 	month_name = timedate.monthname(timedate.currentmonth())
-	year = timedate.currentyear()
+	year = str(timedate.currentyear())
 	try:
 		wikitext = state1 = page.get()
 	except wiki.IsRedirectPage:
