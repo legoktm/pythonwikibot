@@ -331,6 +331,7 @@ class Page:
 		try:
 			self.revisions = self._basicinfo['revisions'][0]
 			self.content = self._basicinfo['revisions'][0]['*']
+			self.basetimestamp = self._basicinfo['revisions'][0]['timestamp']
 		except:
 			if self._basicinfo.has_key('missing'):
 				self.exist = False
@@ -474,7 +475,8 @@ class Page:
 			'text':newtext,
 			'summary':summary,
 			'token':self.edittoken,
-			'starttimestamp':self.starttimestamp,
+#			'starttimestamp':self.starttimestamp,
+			'basetimestamp':self.basetimestamp,
 			'assert':'user',
 		}
 		if md5:
@@ -985,25 +987,147 @@ def showDiff(oldtext, newtext):
 		elif '+' == line[0]:
 			print line.decode('utf-8').encode('utf-8')
 
-def parseTemplate(str):
+
+def templatesWithParams(thistxt):
 	"""
-	Parses the provided string
-	and returns a dict with keys being parameters,
-	and value's being the value of the named parameter.
-	It will not pick up on non-named parameters.
+	Return a list of templates used on this Page.
+
+	Return value is a list of tuples. There is one tuple for each use of
+	a template in the page, with the template title as the first entry
+	and a list of parameters as the second entry.
+	(copied from PyWikipediaBot)
 	"""
-	str = str.replace(' ', '_').replace('|', ' |') #so that \s catches it
-	str = str.replace('}}', ' }}') #last param is caught by \s
-	regex = re.compile("(?P<key>\w*?)=(?P<value>\w*?)\s|$", re.MULTILINE)
-	ret = {}
-	findall = []
-	for line in str.splitlines():
-		findall.extend(regex.findall(str))
-	for i in findall:
-		if len(i[0]) != 0:
-			if not ret.has_key(i[0]):
-				ret[i[0]] = i[1]
-	return ret
+
+
+	# remove commented-out stuff etc.
+	thistxt= removeDisabledParts(thistxt)
+
+	# marker for inside templates or parameters
+	marker = findmarker(thistxt,u'@@', u'@')
+
+	# marker for links
+	marker2 = findmarker(thistxt,u'##', u'#')
+
+	# marker for math
+	marker3 = findmarker(thistxt,u'%%', u'%')
+
+	result = []
+	inside = {}
+	count = 0
+	Rtemplate = re.compile(
+					ur'{{(msg:)?(?!#)(?P<name>[^{\|]+?)(\|(?P<params>[^{]+?))?}}')
+	Rlink = re.compile(ur'\[\[[^\]]+\]\]')
+	Rmath = re.compile(ur'<math>[^<]+</math>')
+	Rmarker = re.compile(ur'%s(\d+)%s' % (marker, marker))
+	Rmarker2 = re.compile(ur'%s(\d+)%s' % (marker2, marker2))
+	Rmarker3 = re.compile(ur'%s(\d+)%s' % (marker3, marker3))
+
+	# Replace math with markers
+	maths = {}
+	count = 0
+	for m in Rmath.finditer(thistxt):
+		count += 1
+		text = m.group()
+		thistxt = thistxt.replace(text, '%s%d%s' % (marker3, count, marker3))
+		maths[count] = text
+
+	while Rtemplate.search(thistxt) is not None:
+			for m in Rtemplate.finditer(thistxt):
+				 # Make sure it is not detected again
+				 count += 1
+				 text = m.group()
+				 thistxt = thistxt.replace(text,
+													'%s%d%s' % (marker, count, marker))
+				 # Make sure stored templates don't contain markers
+				 for m2 in Rmarker.finditer(text):
+					text = text.replace(m2.group(), inside[int(m2.group(1))])
+				 for m2 in Rmarker3.finditer(text):
+					text = text.replace(m2.group(), maths[int(m2.group(1))])
+				 inside[count] = text
+
+				 # Name
+				 name = m.group('name').strip()
+				 m2 = Rmarker.search(name) or Rmath.search(name)
+				 if m2 is not None:
+					# Doesn't detect templates whose name changes,
+					# or templates whose name contains math tags
+					continue
+
+
+				 # {{DEFAULTSORT:...}}
+				 if name.startswith('DEFAULTSORT:'):
+					continue
+
+				 # Parameters
+				 paramString = m.group('params')
+				 params = []
+				 if paramString:
+					# Replace links to markers
+					links = {}
+					count2 = 0
+					for m2 in Rlink.finditer(paramString):
+							count2 += 1
+							text = m2.group()
+							paramString = paramString.replace(text,
+												 '%s%d%s' % (marker2, count2, marker2))
+							links[count2] = text
+					# Parse string
+					markedParams = paramString.split('|')
+					# Replace markers
+					for param in markedParams:
+							for m2 in Rmarker.finditer(param):
+								 param = param.replace(m2.group(),
+															inside[int(m2.group(1))])
+							for m2 in Rmarker2.finditer(param):
+								 param = param.replace(m2.group(),
+															links[int(m2.group(1))])
+							for m2 in Rmarker3.finditer(param):
+								 param = param.replace(m2.group(),
+															maths[int(m2.group(1))])
+							params.append(param)
+
+				 # Add it to the result
+				 result.append((name, params))
+	return result
+
+
+
+def removeDisabledParts(text, tags = ['*']):
+	"""
+	Return text without portions where wiki markup is disabled
+
+	Parts that can/will be removed are --
+	* HTML comments
+	* nowiki tags
+	* pre tags
+	* includeonly tags
+
+	The exact set of parts which should be removed can be passed as the
+	'parts' parameter, which defaults to all.
+	(copied from PyWikipediaBot)
+	"""
+	regexes = {
+			'comments' : r'<!--.*?-->',
+			'includeonly': r'<includeonly>.*?</includeonly>',
+			'nowiki': r'<nowiki>.*?</nowiki>',
+			'pre': r'<pre>.*?</pre>',
+			'source': r'<source .*?</source>',
+	}
+	if '*' in tags:
+		tags = regexes.keys()
+	toRemoveR = re.compile('|'.join([regexes[tag] for tag in tags]),
+						   re.IGNORECASE | re.DOTALL)
+	return toRemoveR.sub('', text)
+
+def findmarker(text, startwith = u'@', append = u'@'):
+	#(copied from PyWikipediaBot)
+	# find a string which is not part of text
+	if len(append) <= 0:
+		append = u'@'
+	mymarker = startwith
+	while mymarker in text:
+		mymarker += append
+	return mymarker
 
 def getURL(url, params=False, headers=False):
 	if not headers:
@@ -1026,9 +1150,11 @@ def postURL(url, params, headers=False):
 	text = response.read()
 	response.close()
 	return urllib.unquote(text)
-def translate(dict):
+def translate(dict, wiki=False):
+	if not wiki:
+		wiki = getWiki()
 	try:
-		return dict[getWiki().langcode()]
+		return dict[wiki.langcode()]
 	except KeyError:
 		try:
 			return dict['en'] #default to english
@@ -1039,7 +1165,7 @@ def urlencode(query,doseq=0):
 	Hack of urllib's urlencode function, which can handle
 	utf-8, but for unknown reasons, chooses not to by 
 	trying to encode everything as ascii
-    """
+	"""
 
 	if hasattr(query,"items"):
 		# mapping objects
@@ -1107,7 +1233,7 @@ getArgs() #so it gets site.. throttles...
 real_dir = config.path
 real_dir = getPath()
 #print this when imported
-print 'Operating as %s on %s.' %(getUser(), config.wiki) #why is it printing twice??
+print 'Operating as %s on %s.' %(getUser(), config.wiki)
 #fix all of the cookiefile stuff
 COOKIEFILE = getPath() + '/wiki/cookies/'+ getUser() +'-'+ str(config.wiki).replace('.','_') + '.data'
 COOKIEFILE = COOKIEFILE.replace(' ','_')
@@ -1116,8 +1242,8 @@ if os.path.isfile(COOKIEFILE):
 	CJ.load(COOKIEFILE)
 
 if __name__ == "__main__":
-    import version
-    version.main()
-    print 'PythonWikiBot release 0.1'
-    print '(C) 2008-2009 PythonWikiBot team MIT License'
-    login(prompt=True)
+	import version
+	version.main()
+	print 'PythonWikiBot release 0.1'
+	print '(C) 2008-2009 PythonWikiBot team MIT License'
+	login(prompt=True)
