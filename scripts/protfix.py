@@ -33,7 +33,12 @@ def convertexpiry(ts):
 	return '%s %s, %s' %(monthname, day, year)		
 		
 def dopage(page): #old way, fixing now
-	wikitext = state0 = page.get()
+	try:
+		wikitext = state0 = page.get()
+	except wiki.IsRedirectPage, target:
+		print 'Is redirect page to ' + str(target)
+		print 'Skipping....'
+		return
 	protlevel = page.protectlevel()
 	print protlevel
 	if len(protlevel.keys()) == 0:
