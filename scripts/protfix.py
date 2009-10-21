@@ -80,7 +80,7 @@ def dopage(page): #old way, fixing now
 		return False
 
 def removetemplate(wikitext, template):
-	wikitext = re.compile(r'\{\{\s*%s((.*?)|)\}\}' %template, re.IGNORECASE).sub(r'', wikitext)
+	wikitext = re.compile(r'\{\{\s*%s((.*?)|)\}\}\s*' %template, re.IGNORECASE).sub(r'', wikitext)
 	return wikitext
 def checktalk():
 	page = wiki.Page('User:Legobot III/Stop')
